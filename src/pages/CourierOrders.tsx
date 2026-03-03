@@ -85,6 +85,14 @@ export default function CourierOrders() {
       shipping_paid: amount,
     }).eq('id', shippingDialog.orderId);
 
+    // Save to courier_collections
+    await supabase.from('courier_collections').insert({
+      courier_id: user?.id || '',
+      order_id: shippingDialog.orderId,
+      amount,
+      collected_by: user?.id,
+    });
+
     logActivity('مندوب - تحصيل شحن', {
       order_id: shippingDialog.orderId,
       status_id: shippingDialog.statusId,

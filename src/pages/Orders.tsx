@@ -170,7 +170,7 @@ export default function Orders() {
               <TableHeader>
                 <TableRow className="border-border">
                   <TableHead className="w-10"><Checkbox checked={filtered.length > 0 && selected.size === filtered.length} onCheckedChange={toggleAll} /></TableHead>
-                  <TableHead className="text-right">Tracking</TableHead>
+                  <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right">العنوان</TableHead>
@@ -194,9 +194,8 @@ export default function Orders() {
                     <TableRow key={order.id} className={`border-border ${hasCourier ? 'bg-muted/30' : ''}`}>
                       <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
                       <TableCell className="text-xs">
-                        <div className="font-mono">{order.tracking_id}</div>
-                        <div className="text-muted-foreground">{new Date(order.created_at).toLocaleDateString('en-US')}</div>
-                        <div className="font-mono text-[10px]">{order.barcode || '-'}</div>
+                        <div className="text-muted-foreground">{new Date(order.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'numeric', year: 'numeric' })}</div>
+                        <div className="font-mono font-bold">{order.barcode || '-'}</div>
                       </TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">{order.customer_name}</TableCell>

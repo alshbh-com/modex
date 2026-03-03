@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Download, FileSpreadsheet, Package, Building2, Truck, Users, DollarSign } from 'lucide-react';
+import { Download, FileSpreadsheet, Package, Building2, Truck, DollarSign, Receipt, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 function downloadCSV(data: any[], filename: string) {
@@ -46,6 +46,8 @@ export default function DataExport() {
     { id: 'offices', title: 'المكاتب', icon: Building2, color: 'hsl(142,76%,36%)', desc: 'تصدير بيانات المكاتب' },
     { id: 'couriers', title: 'المناديب', icon: Truck, color: 'hsl(38,92%,50%)', desc: 'تصدير بيانات المناديب' },
     { id: 'payments', title: 'المدفوعات', icon: DollarSign, color: 'hsl(0,72%,51%)', desc: 'تصدير سجل المدفوعات' },
+    { id: 'courier-collections', title: 'تحصيلات المناديب', icon: Receipt, color: 'hsl(262,83%,58%)', desc: 'تصدير تحصيلات المناديب' },
+    { id: 'advances', title: 'السلفات والخصومات', icon: CreditCard, color: 'hsl(25,95%,53%)', desc: 'تصدير السلفات والخصومات' },
   ];
 
   const doExport = async (type: string) => {
@@ -98,6 +100,37 @@ export default function DataExport() {
             'المكتب': p.offices?.name || '-', 'المبلغ': p.amount, 'النوع': p.type,
             'ملاحظات': p.notes, 'التاريخ': new Date(p.created_at).toLocaleDateString('ar-EG'),
           })), 'payments');
+          break;
+        }
+        case 'courier-collections': {
+          const { data } = await supabase.from('courier_collections').select('*, orders(barcode, customer_name, customer_code)');
+          const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
+          const courierIds = (roles || []).map(r => r.user_id);
+          const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', courierIds);
+          const profileMap: Record<string, string> = {};
+          (profiles || []).forEach(p => { profileMap[p.id] = p.full_name; });
+          downloadCSV((data || []).map((c: any) => ({
+            'المندوب': profileMap[c.courier_id] || '-',
+            'الباركود': c.orders?.barcode || '-',
+            'العميل': c.orders?.customer_name || '-',
+            'الكود': c.orders?.customer_code || '-',
+            'المبلغ': c.amount,
+            'التاريخ': new Date(c.created_at).toLocaleDateString('ar-EG'),
+          })), 'courier_collections');
+          break;
+        }
+        case 'advances': {
+          const { data } = await supabase.from('advances').select('*');
+          const { data: profiles } = await supabase.from('profiles').select('id, full_name');
+          const profileMap: Record<string, string> = {};
+          (profiles || []).forEach(p => { profileMap[p.id] = p.full_name; });
+          downloadCSV((data || []).map((a: any) => ({
+            'الموظف/المندوب': profileMap[a.user_id] || '-',
+            'النوع': a.type === 'advance' ? 'سلفة' : 'خصم',
+            'المبلغ': a.amount,
+            'السبب': a.reason || '-',
+            'التاريخ': new Date(a.created_at).toLocaleDateString('ar-EG'),
+          })), 'advances');
           break;
         }
       }

@@ -244,21 +244,22 @@ export default function CourierCollections() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border">
-                      <TableHead className="text-right">Tracking</TableHead>
+                      <TableHead className="text-right">الباركود</TableHead>
                       <TableHead className="text-right">الكود</TableHead>
                       <TableHead className="text-right">العميل</TableHead>
                       <TableHead className="text-right">السعر</TableHead>
                       <TableHead className="text-right">التوصيل</TableHead>
                       <TableHead className="text-right">الإجمالي</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">شحن محصل</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {orders.length === 0 ? (
-                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-4">لا توجد أوردرات</TableCell></TableRow>
                     ) : orders.map(o => (
                       <TableRow key={o.id} className="border-border">
-                        <TableCell className="font-mono text-xs">{o.tracking_id}</TableCell>
+                        <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
                         <TableCell className="font-mono text-xs">{o.customer_code || '-'}</TableCell>
                         <TableCell>{o.customer_name}</TableCell>
                         <TableCell>{o.price} ج.م</TableCell>
@@ -269,6 +270,7 @@ export default function CourierCollections() {
                             {o.order_statuses?.name || '-'}
                           </Badge>
                         </TableCell>
+                        <TableCell className="font-bold text-emerald-500">{Number(o.shipping_paid) > 0 ? `${o.shipping_paid} ج.م` : '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

@@ -54,12 +54,18 @@ export default function OfficeAccounts() {
   const loadOfficeOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('id, tracking_id, status_id, partial_amount, price')
+      .select('id, tracking_id, barcode, status_id, partial_amount, price, is_settled')
       .eq('office_id', selectedOffice)
       .eq('is_closed', false)
       .order('created_at', { ascending: false });
     setOfficeOrders(data || []);
     setSelectedOrders([]);
+  };
+
+  const toggleSettled = async (orderId: string, settled: boolean) => {
+    await supabase.from('orders').update({ is_settled: settled } as any).eq('id', orderId);
+    setOfficeOrders(prev => prev.map(o => o.id === orderId ? { ...o, is_settled: settled } : o));
+    toast.success(settled ? 'تم تحديد كخالص' : 'تم إلغاء التحديد');
   };
 
   const closeSelectedOrders = async () => {
@@ -357,8 +363,10 @@ export default function OfficeAccounts() {
                     <TableHead className="text-right w-10">
                       <Checkbox checked={selectedOrders.length === officeOrders.length && officeOrders.length > 0} onCheckedChange={toggleAllOrders} />
                     </TableHead>
-                    <TableHead className="text-right">كود الأوردر</TableHead>
+                    <TableHead className="text-right">الباركود</TableHead>
+                    <TableHead className="text-right">السعر</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">خالص</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -369,9 +377,15 @@ export default function OfficeAccounts() {
                         <TableCell>
                           <Checkbox checked={selectedOrders.includes(o.id)} onCheckedChange={() => toggleOrderSelection(o.id)} />
                         </TableCell>
-                        <TableCell className="font-mono text-xs">{o.tracking_id}</TableCell>
+                        <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
+                        <TableCell className="text-sm">{o.price} ج.م</TableCell>
                         <TableCell>
                           {status ? <Badge style={{ backgroundColor: status.color }} className="text-xs">{status.name}</Badge> : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Button size="sm" variant={o.is_settled ? 'default' : 'outline'} className={`text-xs h-6 px-2 ${o.is_settled ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`} onClick={() => toggleSettled(o.id, !o.is_settled)}>
+                            {o.is_settled ? '✓ خالص' : 'خالص'}
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
