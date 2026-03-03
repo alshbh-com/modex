@@ -126,6 +126,7 @@ export default function UsersPage() {
   };
 
   const deleteUser = async (u: any) => {
+    if (u.role === 'owner') { toast.error('لا يمكن حذف حساب المالك'); return; }
     if (!confirm(`هل تريد حذف المستخدم "${u.full_name}"؟`)) return;
     try {
       await callEdgeFunction('delete-user', { user_id: u.id });

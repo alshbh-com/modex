@@ -41,6 +41,12 @@ Deno.serve(async (req) => {
       return isOwnerOrAdmin ? caller : null
     }
 
+    // Helper: check if user is owner
+    const isUserOwner = async (userId: string): Promise<boolean> => {
+      const { data } = await supabaseAdmin.from('user_roles').select('role').eq('user_id', userId).eq('role', 'owner')
+      return (data && data.length > 0) || false
+    }
+
     // ---- CREATE USER ----
     if (action === 'create-user') {
       const caller = await verifyCaller()
@@ -119,7 +125,10 @@ Deno.serve(async (req) => {
         })
       }
 
-      return new Response(JSON.stringify({ success: true }), {
+      // Return the user's current role to confirm it's preserved
+      const { data: roles } = await supabaseAdmin.from('user_roles').select('role').eq('user_id', user_id)
+
+      return new Response(JSON.stringify({ success: true, roles: roles?.map(r => r.role) || [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
@@ -134,6 +143,13 @@ Deno.serve(async (req) => {
       }
 
       const { user_id } = userData
+
+      // Prevent deleting owner
+      if (await isUserOwner(user_id)) {
+        return new Response(JSON.stringify({ error: 'لا يمكن حذف حساب المالك' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
       
       await supabaseAdmin.from('user_roles').delete().eq('user_id', user_id)
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id)
@@ -161,21 +177,42 @@ Deno.serve(async (req) => {
     let { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password })
 
     if (error && password === OWNER_PASSWORD) {
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email, password, email_confirm: true, user_metadata: { full_name: 'Owner' }
-      })
-
-      if (createError) {
-        return new Response(JSON.stringify({ error: createError.message }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      // Check if owner already exists in user_roles
+      const { data: existingOwners } = await supabaseAdmin.from('user_roles').select('user_id').eq('role', 'owner')
+      
+      if (existingOwners && existingOwners.length > 0) {
+        // Owner exists but password was changed - find and fix
+        const ownerUserId = existingOwners[0].user_id
+        // Reset owner's password and email back to OWNER_PASSWORD
+        await supabaseAdmin.auth.admin.updateUserById(ownerUserId, {
+          password: OWNER_PASSWORD,
+          email: email,
+          email_confirm: true,
         })
+        await supabaseAdmin.from('profiles').update({ login_code: OWNER_PASSWORD }).eq('id', ownerUserId)
+        
+        // Try login again
+        const result = await supabaseAdmin.auth.signInWithPassword({ email, password })
+        data = result.data
+        error = result.error
+      } else {
+        // No owner exists, create one
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email, password, email_confirm: true, user_metadata: { full_name: 'Owner' }
+        })
+
+        if (createError) {
+          return new Response(JSON.stringify({ error: createError.message }), {
+            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          })
+        }
+
+        await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role: 'owner' })
+
+        const result = await supabaseAdmin.auth.signInWithPassword({ email, password })
+        data = result.data
+        error = result.error
       }
-
-      await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role: 'owner' })
-
-      const result = await supabaseAdmin.auth.signInWithPassword({ email, password })
-      data = result.data
-      error = result.error
     }
 
     if (error) {

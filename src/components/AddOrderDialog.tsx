@@ -129,12 +129,9 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         logActivity('تعديل أوردر', { order_id: editOrder.id, customer: orderData.customer_name });
         toast.success('تم تحديث الأوردر');
       } else {
-        const { data: seqData } = await supabase.rpc('nextval_barcode' as any);
-        const barcode = seqData ? String(seqData) : String(Date.now());
-        orderData.barcode = barcode;
         orderData.tracking_id = 'temp';
 
-        const { error } = await supabase.from('orders').insert(orderData);
+        const { data: inserted, error } = await supabase.from('orders').insert(orderData).select('barcode').single();
         if (error) throw error;
 
         if (form.product_id && qty > 0) {
@@ -143,7 +140,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             await supabase.from('products').update({ quantity: Math.max(0, product.quantity - qty) }).eq('id', form.product_id);
           }
         }
-        logActivity('إضافة أوردر جديد', { customer: orderData.customer_name, barcode });
+        logActivity('إضافة أوردر جديد', { customer: orderData.customer_name, barcode: inserted?.barcode });
         toast.success('تم إضافة الأوردر بنجاح');
       }
 
