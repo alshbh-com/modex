@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Search, Printer, StickyNote, FileText } from 'lucide-react';
+import { Search, StickyNote, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function PrintSticker() {
@@ -13,15 +13,12 @@ export default function PrintSticker() {
   const [results, setResults] = useState<any[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  // Load all non-closed orders on mount
-  useEffect(() => {
-    loadAllOrders();
-  }, []);
+  useEffect(() => { loadAllOrders(); }, []);
 
   const loadAllOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('*, offices(name), companies(name)')
+      .select('*, offices(name)')
       .eq('is_closed', false)
       .order('created_at', { ascending: false })
       .limit(500);
@@ -33,7 +30,7 @@ export default function PrintSticker() {
     const term = search.trim();
     const { data } = await supabase
       .from('orders')
-      .select('*, offices(name), companies(name)')
+      .select('*, offices(name)')
       .or(`barcode.ilike.%${term}%,customer_code.ilike.%${term}%,tracking_id.ilike.%${term}%,customer_phone.ilike.%${term}%,customer_name.ilike.%${term}%`)
       .order('created_at', { ascending: false })
       .limit(200);
@@ -55,13 +52,13 @@ export default function PrintSticker() {
   const generateBarcodeStripes = (barcode: string) => {
     return barcode.split('').map((c: string) => {
       const w = (parseInt(c) || 1) + 1;
-      return `<div style="width:${w}px;height:40px;background:#000;margin:0 1px;display:inline-block"></div>`;
+      return `<div style="width:${w}px;height:30px;background:#000;margin:0 0.5px;display:inline-block"></div>`;
     }).join('');
   };
 
   const printStickers = () => {
     if (selectedOrders.length === 0) { toast.error('اختر أوردرات للطباعة'); return; }
-    const printWindow = window.open('', '_blank', 'width=600,height=800');
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
     if (!printWindow) return;
 
     const stickers = selectedOrders.map(order => {
@@ -75,23 +72,23 @@ export default function PrintSticker() {
           <div class="row"><span>الكود: <b>${order.customer_code || '-'}</b></span><span>${new Date(order.created_at).toLocaleDateString('ar-EG')}</span></div>
           <div class="info">المكتب: <b>${order.offices?.name || '-'}</b></div>
           <div class="info">هاتف: <b dir="ltr">${order.customer_phone}</b></div>
-          <div class="info">العنوان: <b>${order.address || order.governorate || '-'}</b></div>
-          <div class="total">الإجمالي: ${total} ج.م</div>
+          <div class="info">العنوان: <b>${order.address || '-'}</b></div>
+          <div class="total">${total} ج.م</div>
         </div>`;
     }).join('');
 
     printWindow.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
       <style>
-        @page { size: 76mm 127mm; margin: 0; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 11px; }
-        .sticker { width: 74mm; height: 125mm; padding: 3mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; justify-content: center; }
+        @page { size: 50mm 80mm; margin: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 9px; }
+        .sticker { width: 48mm; height: 78mm; padding: 2mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; justify-content: center; }
         .sticker:last-child { page-break-after: auto; }
-        .header { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 6px; }
-        .barcode-area { text-align: center; margin: 6px 0; }
-        .barcode-num { text-align: center; font-family: monospace; font-size: 14px; font-weight: bold; margin-bottom: 6px; }
-        .info { margin: 3px 0; font-size: 11px; }
-        .row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 11px; }
-        .total { font-size: 16px; font-weight: bold; text-align: center; margin-top: 8px; border: 2px solid #000; padding: 4px; }
+        .header { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+        .barcode-area { text-align: center; margin: 3px 0; }
+        .barcode-num { text-align: center; font-family: monospace; font-size: 10px; font-weight: bold; margin-bottom: 3px; }
+        .info { margin: 1px 0; font-size: 9px; }
+        .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 9px; }
+        .total { font-size: 13px; font-weight: bold; text-align: center; margin-top: 4px; border: 1.5px solid #000; padding: 2px; }
       </style></head><body>${stickers}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
@@ -116,7 +113,7 @@ export default function PrintSticker() {
             <tr><th>اسم العميل</th><td>${order.customer_name}</td></tr>
             <tr><th>الهاتف</th><td dir="ltr">${order.customer_phone}</td></tr>
             <tr><th>المكتب</th><td>${order.offices?.name || '-'}</td></tr>
-            <tr><th>العنوان</th><td>${order.address || order.governorate || '-'}</td></tr>
+            <tr><th>العنوان</th><td>${order.address || '-'}</td></tr>
             <tr><th>المنتج</th><td>${order.product_name || '-'}</td></tr>
             <tr><th>الكمية</th><td>${order.quantity}</td></tr>
             <tr><th>السعر</th><td>${Number(order.price)} ج.م</td></tr>
@@ -161,7 +158,7 @@ export default function PrintSticker() {
       <div className="flex flex-wrap gap-2 items-center">
         <span className="text-sm font-medium">تم تحديد {selected.size} أوردر</span>
         <Button size="sm" onClick={printStickers} disabled={selected.size === 0}>
-          <StickyNote className="h-4 w-4 ml-1" />ملصقات (3×5)
+          <StickyNote className="h-4 w-4 ml-1" />ملصقات صغيرة
         </Button>
         <Button size="sm" variant="outline" onClick={printInvoice} disabled={selected.size === 0}>
           <FileText className="h-4 w-4 ml-1" />فاتورة (A4)
@@ -178,6 +175,7 @@ export default function PrintSticker() {
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
+                  <TableHead className="text-right">العنوان</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">الهاتف</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
@@ -185,13 +183,14 @@ export default function PrintSticker() {
               </TableHeader>
               <TableBody>
                 {results.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                 ) : results.map(order => (
                   <TableRow key={order.id} className="border-border">
                     <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>
                     <TableCell className="font-mono text-xs">{order.barcode || '-'}</TableCell>
                     <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                     <TableCell className="text-sm">{order.customer_name}</TableCell>
+                    <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                     <TableCell dir="ltr" className="hidden sm:table-cell text-sm">{order.customer_phone}</TableCell>
                     <TableCell className="hidden sm:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
                     <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>

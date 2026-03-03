@@ -5,16 +5,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 export default function ActivityLogs() {
   const [logs, setLogs] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const load = async () => {
-      const { data, error } = await supabase
-        .from('activity_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-      if (error) console.error('Activity logs error:', error);
-      setLogs(data || []);
+      const [logsRes, profilesRes] = await Promise.all([
+        supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(200),
+        supabase.from('profiles').select('id, full_name'),
+      ]);
+      setLogs(logsRes.data || []);
+      const map: Record<string, string> = {};
+      (profilesRes.data || []).forEach(p => { map[p.id] = p.full_name; });
+      setProfiles(map);
     };
     load();
   }, []);
@@ -22,13 +24,14 @@ export default function ActivityLogs() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">سجل الحركات</h1>
-      <p className="text-sm text-muted-foreground">يعرض آخر 200 حركة في النظام</p>
+      <p className="text-sm text-muted-foreground">يعرض آخر 200 حركة - يتم حذف السجلات تلقائياً بعد 7 أيام</p>
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="border-border">
+                  <TableHead className="text-right">المستخدم</TableHead>
                   <TableHead className="text-right">الإجراء</TableHead>
                   <TableHead className="text-right">التفاصيل</TableHead>
                   <TableHead className="text-right">التاريخ</TableHead>
@@ -36,9 +39,10 @@ export default function ActivityLogs() {
               </TableHeader>
               <TableBody>
                 {logs.length === 0 ? (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">لا توجد سجلات بعد - سيتم تسجيل الحركات تلقائياً</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">لا توجد سجلات بعد</TableCell></TableRow>
                 ) : logs.map((l) => (
                   <TableRow key={l.id} className="border-border">
+                    <TableCell className="text-sm font-medium">{l.user_id ? (profiles[l.user_id] || 'مجهول') : '-'}</TableCell>
                     <TableCell className="font-medium text-sm">{l.action}</TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                       {typeof l.details === 'object' ? JSON.stringify(l.details) : l.details}

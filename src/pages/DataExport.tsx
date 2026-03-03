@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -28,41 +28,25 @@ function downloadCSV(data: any[], filename: string) {
   toast.success('تم التصدير بنجاح');
 }
 
-const exportOptions = [
-  {
-    id: 'orders', title: 'الأوردرات', icon: Package, color: 'hsl(217,91%,60%)',
-    desc: 'تصدير جميع الأوردرات مع البيانات الكاملة',
-  },
-  {
-    id: 'orders-open', title: 'الأوردرات المفتوحة', icon: Package, color: 'hsl(142,76%,36%)',
-    desc: 'تصدير الأوردرات المفتوحة فقط',
-  },
-  {
-    id: 'orders-closed', title: 'الأوردرات المغلقة', icon: Package, color: 'hsl(215,20%,60%)',
-    desc: 'تصدير الأوردرات المغلقة فقط',
-  },
-  {
-    id: 'offices', title: 'المكاتب', icon: Building2, color: 'hsl(142,76%,36%)',
-    desc: 'تصدير بيانات المكاتب',
-  },
-  {
-    id: 'couriers', title: 'المناديب', icon: Truck, color: 'hsl(38,92%,50%)',
-    desc: 'تصدير بيانات المناديب',
-  },
-  {
-    id: 'customers', title: 'العملاء', icon: Users, color: 'hsl(270,60%,60%)',
-    desc: 'تصدير بيانات العملاء',
-  },
-  {
-    id: 'payments', title: 'المدفوعات', icon: DollarSign, color: 'hsl(0,72%,51%)',
-    desc: 'تصدير سجل المدفوعات',
-  },
-];
-
 export default function DataExport() {
   const [loading, setLoading] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [filterOffice, setFilterOffice] = useState('all');
+  const [offices, setOffices] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
+  }, []);
+
+  const exportOptions = [
+    { id: 'orders', title: 'الأوردرات', icon: Package, color: 'hsl(217,91%,60%)', desc: 'تصدير جميع الأوردرات' },
+    { id: 'orders-open', title: 'الأوردرات المفتوحة', icon: Package, color: 'hsl(142,76%,36%)', desc: 'تصدير الأوردرات المفتوحة فقط' },
+    { id: 'orders-closed', title: 'الأوردرات المغلقة', icon: Package, color: 'hsl(215,20%,60%)', desc: 'تصدير الأوردرات المغلقة فقط' },
+    { id: 'offices', title: 'المكاتب', icon: Building2, color: 'hsl(142,76%,36%)', desc: 'تصدير بيانات المكاتب' },
+    { id: 'couriers', title: 'المناديب', icon: Truck, color: 'hsl(38,92%,50%)', desc: 'تصدير بيانات المناديب' },
+    { id: 'payments', title: 'المدفوعات', icon: DollarSign, color: 'hsl(0,72%,51%)', desc: 'تصدير سجل المدفوعات' },
+  ];
 
   const doExport = async (type: string) => {
     setLoading(type);
@@ -71,20 +55,22 @@ export default function DataExport() {
         case 'orders':
         case 'orders-open':
         case 'orders-closed': {
-          let query = supabase.from('orders').select('tracking_id, barcode, customer_code, customer_name, customer_phone, product_name, quantity, price, delivery_price, governorate, address, is_closed, created_at');
+          let query = supabase.from('orders').select('tracking_id, barcode, customer_code, customer_name, customer_phone, product_name, quantity, price, delivery_price, address, notes, is_closed, created_at, offices(name), order_statuses(name)');
           if (type === 'orders-open') query = query.eq('is_closed', false);
           if (type === 'orders-closed') query = query.eq('is_closed', true);
+          if (filterOffice !== 'all') query = query.eq('office_id', filterOffice);
           if (dateFrom) query = query.gte('created_at', `${dateFrom}T00:00:00`);
           if (dateTo) query = query.lte('created_at', `${dateTo}T23:59:59`);
           const { data } = await query.order('created_at', { ascending: false });
-          downloadCSV((data || []).map(o => ({
+          downloadCSV((data || []).map((o: any) => ({
             'رقم التتبع': o.tracking_id, 'الباركود': o.barcode, 'الكود': o.customer_code,
             'العميل': o.customer_name, 'الهاتف': o.customer_phone, 'المنتج': o.product_name,
             'الكمية': o.quantity, 'السعر': o.price, 'الشحن': o.delivery_price,
             'الإجمالي': Number(o.price) + Number(o.delivery_price),
-            'المحافظة': o.governorate, 'العنوان': o.address,
+            'العنوان': o.address, 'ملاحظات': o.notes,
+            'المكتب': o.offices?.name || '-', 'الحالة': o.order_statuses?.name || '-',
             'مغلق': o.is_closed ? 'نعم' : 'لا', 'التاريخ': new Date(o.created_at).toLocaleDateString('ar-EG'),
-          })), 'orders');
+          })), `orders_${type}`);
           break;
         }
         case 'offices': {
@@ -100,19 +86,14 @@ export default function DataExport() {
           const couriers = (data || []).filter((p: any) => p.user_roles?.some((r: any) => r.role === 'courier'));
           downloadCSV(couriers.map(c => ({
             'الاسم': c.full_name, 'الهاتف': c.phone, 'العنوان': c.address,
-            'الراتب': c.salary, 'نشط': c.is_active ? 'نعم' : 'لا',
+            'مناطق التغطية': c.coverage_areas, 'الراتب': c.salary, 'نشط': c.is_active ? 'نعم' : 'لا',
           })), 'couriers');
           break;
         }
-        case 'customers': {
-          const { data } = await supabase.from('customers').select('*');
-          downloadCSV((data || []).map(c => ({
-            'الاسم': c.name, 'الهاتف': c.phone, 'تاريخ الإضافة': new Date(c.created_at).toLocaleDateString('ar-EG'),
-          })), 'customers');
-          break;
-        }
         case 'payments': {
-          const { data } = await supabase.from('office_payments').select('*, offices:office_id(name)');
+          let pQuery = supabase.from('office_payments').select('*, offices:office_id(name)');
+          if (filterOffice !== 'all') pQuery = pQuery.eq('office_id', filterOffice);
+          const { data } = await pQuery;
           downloadCSV((data || []).map((p: any) => ({
             'المكتب': p.offices?.name || '-', 'المبلغ': p.amount, 'النوع': p.type,
             'ملاحظات': p.notes, 'التاريخ': new Date(p.created_at).toLocaleDateString('ar-EG'),
@@ -135,9 +116,18 @@ export default function DataExport() {
       <Card className="bg-card border-border">
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-3 items-end">
+            <div>
+              <Label className="text-xs">المكتب</Label>
+              <Select value={filterOffice} onValueChange={setFilterOffice}>
+                <SelectTrigger className="bg-secondary border-border w-[180px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل المكاتب</SelectItem>
+                  {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label className="text-xs">من تاريخ</Label><Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="bg-secondary border-border w-[150px]" /></div>
             <div><Label className="text-xs">إلى تاريخ</Label><Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="bg-secondary border-border w-[150px]" /></div>
-            <p className="text-xs text-muted-foreground">* الفلتر بالتاريخ يعمل على الأوردرات فقط</p>
           </div>
         </CardContent>
       </Card>

@@ -365,6 +365,7 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          is_fixed: boolean
           name: string
           sort_order: number
         }
@@ -372,6 +373,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_fixed?: boolean
           name: string
           sort_order?: number
         }
@@ -379,6 +381,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_fixed?: boolean
           name?: string
           sort_order?: number
         }
@@ -631,6 +634,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_old_activity_logs: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -639,6 +643,10 @@ export type Database = {
         Returns: boolean
       }
       is_owner_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_activity: {
+        Args: { _action: string; _details?: Json; _user_id?: string }
+        Returns: undefined
+      }
       nextval_barcode: { Args: never; Returns: number }
     }
     Enums: {

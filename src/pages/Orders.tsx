@@ -11,6 +11,7 @@ import { Search, UserPlus, Lock, Trash2, UserMinus, Pencil } from 'lucide-react'
 import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activityLogger';
 
 export default function Orders() {
   const { isOwner } = useAuth();
@@ -79,6 +80,7 @@ export default function Orders() {
     
     const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
+    logActivity('تعيين أوردرات لمندوب', { count: selected.size, courier_id: assignCourier });
     toast.success(`تم تعيين ${selected.size} أوردر للمندوب`);
     setSelected(new Set()); setAssignCourier('');
     loadOrders();
@@ -90,6 +92,7 @@ export default function Orders() {
     
     const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
+    logActivity('إلغاء تعيين أوردرات', { count: selected.size });
     toast.success(`تم إلغاء تعيين ${selected.size} أوردر`);
     setSelected(new Set());
     loadOrders();
@@ -100,6 +103,7 @@ export default function Orders() {
     if (!confirm(`هل تريد تقفيل ${selected.size} أوردر؟`)) return;
     const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
+    logActivity('تقفيل أوردرات', { count: selected.size });
     toast.success(`تم تقفيل ${selected.size} أوردر`);
     setSelected(new Set());
     loadOrders();
@@ -110,6 +114,7 @@ export default function Orders() {
     if (!confirm(`هل تريد حذف ${selected.size} أوردر نهائياً؟`)) return;
     const { error } = await supabase.from('orders').delete().in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
+    logActivity('حذف أوردرات', { count: selected.size });
     toast.success(`تم حذف ${selected.size} أوردر`);
     setSelected(new Set());
     loadOrders();

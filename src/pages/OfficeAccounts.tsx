@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Pencil, Trash2, Settings2, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activityLogger';
 
 export default function OfficeAccounts() {
   const { isOwner } = useAuth();
@@ -65,7 +66,7 @@ export default function OfficeAccounts() {
     setSelectedOrders([]);
   };
 
-  const quickStatuses = ['تم التسليم', 'مرتجع', 'مؤجل', 'تسليم جزئي', 'مرتجع دون شحن'];
+  const quickStatuses = ['تم التسليم', 'تسليم جزئي', 'مؤجل', 'رفض ولم يدفع شحن', 'رفض ودفع شحن', 'ملغي', 'لم يرد'];
 
   const changeOrderStatus = async (orderId: string, statusName: string, partialAmount?: number) => {
     const status = statuses.find(s => s.name === statusName);
@@ -76,6 +77,7 @@ export default function OfficeAccounts() {
     }
     const { error } = await supabase.from('orders').update(updateData).eq('id', orderId);
     if (error) { toast.error(error.message); return; }
+    logActivity('تغيير حالة أوردر من حسابات المكاتب', { order_id: orderId, status: statusName });
     toast.success(`تم تغيير الحالة إلى ${statusName}`);
     loadOfficeOrders();
     loadAccounts();
@@ -86,6 +88,7 @@ export default function OfficeAccounts() {
     if (!confirm(`هل تريد تقفيل ${selectedOrders.length} أوردر؟ ستختفي من الحساب.`)) return;
     const { error } = await supabase.from('orders').update({ is_closed: true }).in('id', selectedOrders);
     if (error) { toast.error(error.message); return; }
+    logActivity('تقفيل حساب مكتب', { count: selectedOrders.length, office_id: selectedOffice });
     toast.success(`تم تقفيل ${selectedOrders.length} أوردر`);
     setSelectedOrders([]);
     loadOfficeOrders();
@@ -124,11 +127,16 @@ export default function OfficeAccounts() {
     const dateFilter = getDateFilter();
 
     const deliveredStatus = statuses.find(s => s.name === 'تم التسليم');
-    const returnStatuses = statuses.filter(s => s.name.includes('مرتجع') && s.name !== 'مرتجع دون شحن');
-    const returnNoShipStatus = statuses.find(s => s.name === 'مرتجع دون شحن');
-    const postponedStatus = statuses.find(s => s.name === 'مؤجل');
-    const rejectStatuses = statuses.filter(s => s.name.includes('رفض'));
     const partialStatus = statuses.find(s => s.name === 'تسليم جزئي');
+    const postponedStatus = statuses.find(s => s.name === 'مؤجل');
+    // Returns = رفض ولم يدفع شحن, رفض ودفع شحن, تهرب, ملغي, لم يرد, لايرد
+    const returnStatusIds = statuses
+      .filter(s => ['رفض ولم يدفع شحن', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'لم يرد', 'لايرد'].includes(s.name))
+      .map(s => s.id);
+    // Shipping deduction = رفض ولم يدفع شحن (order paid shipping but rejected without paying)
+    const shipDeductionIds = statuses
+      .filter(s => ['رفض ولم يدفع شحن'].includes(s.name))
+      .map(s => s.id);
 
     const { data: allPayments } = await supabase.from('office_payments').select('*');
 
@@ -143,11 +151,11 @@ export default function OfficeAccounts() {
       const commission = officePayments.filter(p => p.type === 'commission').reduce((sum, p) => sum + Number(p.amount), 0);
 
       const deliveredTotal = orders.filter(o => o.status_id === deliveredStatus?.id).reduce((sum, o) => sum + Number(o.price), 0);
-      const returnedTotal = orders.filter(o => returnStatuses.some(rs => rs.id === o.status_id)).reduce((sum, o) => sum + Number(o.price), 0);
+      const returnedTotal = orders.filter(o => returnStatusIds.includes(o.status_id)).reduce((sum, o) => sum + Number(o.price), 0);
       const postponedTotal = orders.filter(o => o.status_id === postponedStatus?.id).reduce((sum, o) => sum + Number(o.price), 0);
       
       const returnNoShipDeduction = orders
-        .filter(o => o.status_id === returnNoShipStatus?.id || rejectStatuses.some(rs => rs.id === o.status_id))
+        .filter(o => shipDeductionIds.includes(o.status_id))
         .reduce((sum, o) => sum + Number(o.delivery_price), 0);
 
       const partialOrders = orders.filter(o => o.status_id === partialStatus?.id);

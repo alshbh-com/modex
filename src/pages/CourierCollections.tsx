@@ -61,7 +61,7 @@ export default function CourierCollections() {
   };
 
   const deliveredStatus = statuses.find(s => s.name === 'تم التسليم');
-  const rejectWithShipStatus = statuses.find(s => s.name === 'رفض واخد شحن');
+  const rejectWithShipStatus = statuses.find(s => s.name === 'رفض ودفع شحن');
 
   // Auto-calculated: total collection = sum of (price + delivery_price) for delivered orders
   const deliveredOrders = orders.filter(o => o.status_id === deliveredStatus?.id);

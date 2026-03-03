@@ -11,9 +11,7 @@ export default function CourierStats() {
   const [orders, setOrders] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     const [courierRes, ordersRes, statusRes] = await Promise.all([
@@ -29,20 +27,15 @@ export default function CourierStats() {
     setStatuses(statusRes.data || []);
   };
 
-  const getStatusName = (id: string) => statuses.find(s => s.id === id)?.name || '-';
-  
-  const deliveredStatuses = statuses.filter(s => 
-    s.name?.includes('تسليم') || s.name?.includes('تم التوصيل') || s.name?.includes('مسلم')
-  ).map(s => s.id);
-
-  const returnedStatuses = statuses.filter(s => 
-    s.name?.includes('مرتجع') || s.name?.includes('رفض')
+  const deliveredStatusIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
+  const returnedStatusIds = statuses.filter(s => 
+    ['رفض ولم يدفع شحن', 'رفض ودفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)
   ).map(s => s.id);
 
   const courierData = couriers.map(c => {
     const courierOrders = orders.filter(o => o.courier_id === c.id);
-    const delivered = courierOrders.filter(o => deliveredStatuses.includes(o.status_id));
-    const returned = courierOrders.filter(o => returnedStatuses.includes(o.status_id));
+    const delivered = courierOrders.filter(o => deliveredStatusIds.includes(o.status_id));
+    const returned = courierOrders.filter(o => returnedStatusIds.includes(o.status_id));
     const totalCollection = delivered.reduce((s, o) => s + Number(o.price) + Number(o.delivery_price), 0);
     const successRate = courierOrders.length > 0 ? Math.round((delivered.length / courierOrders.length) * 100) : 0;
 
@@ -77,7 +70,6 @@ export default function CourierStats() {
     <div className="space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold">إحصائيات المناديب</h1>
 
-      {/* Top 3 */}
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
         {topThree.map((c, i) => {
           const M = medals[i];
@@ -98,7 +90,6 @@ export default function CourierStats() {
         })}
       </div>
 
-      {/* Chart */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-2"><CardTitle className="text-base">مقارنة أداء المناديب</CardTitle></CardHeader>
         <CardContent>
@@ -118,7 +109,6 @@ export default function CourierStats() {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card className="bg-card border-border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -137,7 +127,9 @@ export default function CourierStats() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {courierData.map((c, i) => (
+                {courierData.length === 0 ? (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">لا توجد بيانات</TableCell></TableRow>
+                ) : courierData.map((c, i) => (
                   <TableRow key={c.id} className="border-border">
                     <TableCell>{i + 1}</TableCell>
                     <TableCell className="font-medium">{c.name}</TableCell>

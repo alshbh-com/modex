@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LogOut, Eye, Phone, MessageSquare, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { logActivity } from '@/lib/activityLogger';
 
 const SHIPPING_OPTIONS = [10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100];
 
@@ -65,6 +66,7 @@ export default function CourierOrders() {
     }
 
     await supabase.from('orders').update({ status_id: statusId }).eq('id', orderId);
+    logActivity('مندوب غيّر حالة أوردر', { order_id: orderId, status_id: statusId });
 
     if (statusId === postponedStatus?.id) {
       await supabase.from('orders').update({ courier_id: null, status_id: null }).eq('id', orderId);
@@ -80,6 +82,7 @@ export default function CourierOrders() {
       status_id: shippingDialog.statusId,
       shipping_paid: amount,
     }).eq('id', shippingDialog.orderId);
+    logActivity('مندوب - رفض ودفع شحن', { order_id: shippingDialog.orderId, amount });
     toast.success(`تم - مصاريف الشحن المدفوعة: ${amount} ج.م`);
     setShippingDialog(null);
     load();

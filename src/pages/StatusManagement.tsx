@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Trash2, Edit, ArrowUp, ArrowDown, Lock } from 'lucide-react';
 import { toast } from 'sonner';
+import { logActivity } from '@/lib/activityLogger';
 
 export default function StatusManagement() {
   const [statuses, setStatuses] = useState<any[]>([]);
@@ -34,11 +35,15 @@ export default function StatusManagement() {
   const save = async () => {
     if (!name.trim()) { toast.error('أدخل اسم الحالة'); return; }
     if (editId) {
+      const editing = statuses.find(s => s.id === editId);
+      if (editing?.is_fixed) { toast.error('لا يمكن تعديل حالة ثابتة'); return; }
       await supabase.from('order_statuses').update({ name, color }).eq('id', editId);
+      logActivity('تعديل حالة', { status_name: name });
       toast.success('تم التحديث');
     } else {
       const maxOrder = statuses.length > 0 ? Math.max(...statuses.map(s => s.sort_order)) + 1 : 0;
-      await supabase.from('order_statuses').insert({ name, color, sort_order: maxOrder });
+      await supabase.from('order_statuses').insert({ name, color, sort_order: maxOrder, is_fixed: false });
+      logActivity('إضافة حالة جديدة', { status_name: name });
       toast.success('تمت الإضافة');
     }
     setDialogOpen(false); setEditId(null); setName(''); setColor('#3b82f6');
@@ -46,14 +51,18 @@ export default function StatusManagement() {
   };
 
   const remove = async (id: string) => {
+    const s = statuses.find(st => st.id === id);
+    if (s?.is_fixed) { toast.error('هذه حالة ثابتة لا يمكن حذفها'); return; }
     if (orderCounts[id] > 0) { toast.error('لا يمكن حذف حالة مستخدمة في أوردرات'); return; }
     if (!confirm('حذف هذه الحالة؟')) return;
     await supabase.from('order_statuses').delete().eq('id', id);
+    logActivity('حذف حالة', { status_name: s?.name });
     toast.success('تم الحذف');
     loadData();
   };
 
   const edit = (s: any) => {
+    if (s.is_fixed) { toast.error('لا يمكن تعديل حالة ثابتة'); return; }
     setEditId(s.id); setName(s.name); setColor(s.color || '#3b82f6'); setDialogOpen(true);
   };
 
@@ -115,6 +124,7 @@ export default function StatusManagement() {
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-center">اللون</TableHead>
                   <TableHead className="text-center">عدد الأوردرات</TableHead>
+                  <TableHead className="text-center">نوع</TableHead>
                   <TableHead className="text-center">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
@@ -134,10 +144,21 @@ export default function StatusManagement() {
                       <div className="w-6 h-6 rounded-full mx-auto" style={{ backgroundColor: s.color || '#6b7280' }} />
                     </TableCell>
                     <TableCell className="text-center font-bold">{orderCounts[s.id] || 0}</TableCell>
+                    <TableCell className="text-center">
+                      {s.is_fixed ? (
+                        <Badge variant="outline" className="text-xs gap-1"><Lock className="h-3 w-3" />ثابتة</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">مخصصة</Badge>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => edit(s)}><Edit className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => remove(s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        {!s.is_fixed && (
+                          <>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => edit(s)}><Edit className="h-3.5 w-3.5" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => remove(s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
