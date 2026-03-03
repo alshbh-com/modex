@@ -80,9 +80,9 @@ export default function PrintSticker() {
 
     printWindow.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
       <style>
-        @page { size: 50mm 80mm; margin: 0; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 9px; }
-        .sticker { width: 48mm; height: 78mm; padding: 2mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; justify-content: center; }
+        @page { size: 50mm 100mm; margin: 0; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; font-size: 10px; }
+        .sticker { width: 48mm; height: 98mm; padding: 3mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
         .sticker:last-child { page-break-after: auto; }
         .header { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 3px; }
         .barcode-area { text-align: center; margin: 3px 0; }

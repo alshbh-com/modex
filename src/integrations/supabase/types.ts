@@ -404,6 +404,7 @@ export type Database = {
           governorate: string | null
           id: string
           is_closed: boolean
+          is_settled: boolean
           notes: string | null
           office_id: string | null
           partial_amount: number | null
@@ -433,6 +434,7 @@ export type Database = {
           governorate?: string | null
           id?: string
           is_closed?: boolean
+          is_settled?: boolean
           notes?: string | null
           office_id?: string | null
           partial_amount?: number | null
@@ -462,6 +464,7 @@ export type Database = {
           governorate?: string | null
           id?: string
           is_closed?: boolean
+          is_settled?: boolean
           notes?: string | null
           office_id?: string | null
           partial_amount?: number | null
