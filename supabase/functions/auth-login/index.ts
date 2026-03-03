@@ -143,13 +143,6 @@ Deno.serve(async (req) => {
       }
 
       const { user_id } = userData
-
-      // Prevent deleting owner
-      if (await isUserOwner(user_id)) {
-        return new Response(JSON.stringify({ error: 'لا يمكن حذف حساب المالك' }), {
-          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        })
-      }
       
       await supabaseAdmin.from('user_roles').delete().eq('user_id', user_id)
       const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(user_id)

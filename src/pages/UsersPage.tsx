@@ -126,7 +126,6 @@ export default function UsersPage() {
   };
 
   const deleteUser = async (u: any) => {
-    if (u.role === 'owner') { toast.error('لا يمكن حذف حساب المالك'); return; }
     if (!confirm(`هل تريد حذف المستخدم "${u.full_name}"؟`)) return;
     try {
       await callEdgeFunction('delete-user', { user_id: u.id });
@@ -294,7 +293,7 @@ export default function UsersPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        {isOwner && u.role !== 'owner' && (
+                        {isOwner && (
                           <Button size="icon" variant="ghost" title="الصلاحيات" onClick={() => openPermissions(u)}>
                             <Shield className="h-4 w-4" />
                           </Button>
@@ -302,11 +301,9 @@ export default function UsersPage() {
                         <Button size="icon" variant="ghost" title="تغيير كلمة المرور" onClick={() => { setPwDialog(u); setNewPw(''); }}>
                           <Key className="h-4 w-4" />
                         </Button>
-                        {u.role !== 'owner' && (
-                          <Button size="icon" variant="ghost" className="text-destructive" title="حذف" onClick={() => deleteUser(u)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <Button size="icon" variant="ghost" className="text-destructive" title="حذف" onClick={() => deleteUser(u)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
