@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, Package, Building2, Factory, Box,
+  LayoutDashboard, Package, Building2, Box,
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
@@ -26,7 +26,6 @@ const mainItems = [
 const managementItems = [
   { title: 'المكاتب', url: '/offices', icon: Building2 },
   { title: 'أسعار التوصيل', url: '/delivery-prices', icon: MapPin },
-  { title: 'الشركات', url: '/companies', icon: Factory },
   { title: 'المنتجات', url: '/products', icon: Box },
   { title: 'العملاء', url: '/customers', icon: Contact },
   { title: 'المندوبين', url: '/couriers', icon: Truck },
@@ -36,7 +35,6 @@ const managementItems = [
 
 const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
-  { title: 'حسابات الشركات', url: '/company-accounts', icon: CreditCard },
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
 ];

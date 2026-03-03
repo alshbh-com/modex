@@ -19,6 +19,7 @@ export default function DeliveryPrices() {
   const [officeId, setOfficeId] = useState('');
   const [governorate, setGovernorate] = useState('');
   const [price, setPrice] = useState('');
+  const [pickupPrice, setPickupPrice] = useState('');
 
   useEffect(() => {
     supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
@@ -33,11 +34,12 @@ export default function DeliveryPrices() {
   const save = async () => {
     if (!officeId || !governorate.trim()) { toast.error('المكتب والمحافظة مطلوبين'); return; }
     const p = parseFloat(price) || 0;
+    const pp = parseFloat(pickupPrice) || 0;
     if (editId) {
-      await supabase.from('delivery_prices').update({ office_id: officeId, governorate, price: p }).eq('id', editId);
+      await supabase.from('delivery_prices').update({ office_id: officeId, governorate, price: p, pickup_price: pp }).eq('id', editId);
       toast.success('تم التعديل');
     } else {
-      await supabase.from('delivery_prices').insert({ office_id: officeId, governorate, price: p });
+      await supabase.from('delivery_prices').insert({ office_id: officeId, governorate, price: p, pickup_price: pp });
       toast.success('تم الإضافة');
     }
     setOpen(false); resetForm(); load();
@@ -50,10 +52,10 @@ export default function DeliveryPrices() {
   };
 
   const edit = (item: any) => {
-    setEditId(item.id); setOfficeId(item.office_id); setGovernorate(item.governorate); setPrice(String(item.price)); setOpen(true);
+    setEditId(item.id); setOfficeId(item.office_id); setGovernorate(item.governorate); setPrice(String(item.price)); setPickupPrice(String(item.pickup_price || 0)); setOpen(true);
   };
 
-  const resetForm = () => { setEditId(null); setOfficeId(''); setGovernorate(''); setPrice(''); };
+  const resetForm = () => { setEditId(null); setOfficeId(''); setGovernorate(''); setPrice(''); setPickupPrice(''); };
 
   const filtered = filterOffice === 'all' ? prices : prices.filter(p => p.office_id === filterOffice);
 
@@ -83,6 +85,10 @@ export default function DeliveryPrices() {
                 <Label>سعر التوصيل (ج.م)</Label>
                 <Input type="number" value={price} onChange={e => setPrice(e.target.value)} className="bg-secondary border-border" placeholder="0" />
               </div>
+              <div className="space-y-2">
+                <Label>البيك اب (ج.م)</Label>
+                <Input type="number" value={pickupPrice} onChange={e => setPickupPrice(e.target.value)} className="bg-secondary border-border" placeholder="0" />
+              </div>
               <Button onClick={save} className="w-full">{editId ? 'حفظ التعديل' : 'إضافة'}</Button>
             </div>
           </DialogContent>
@@ -105,17 +111,19 @@ export default function DeliveryPrices() {
                 <TableHead className="text-right">المكتب</TableHead>
                 <TableHead className="text-right">المحافظة / المنطقة</TableHead>
                 <TableHead className="text-right">سعر التوصيل</TableHead>
+                <TableHead className="text-right">البيك اب</TableHead>
                 <TableHead className="text-right">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">لا توجد أسعار</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">لا توجد أسعار</TableCell></TableRow>
               ) : filtered.map(item => (
                 <TableRow key={item.id} className="border-border">
                   <TableCell className="font-medium">{item.offices?.name || '-'}</TableCell>
                   <TableCell>{item.governorate}</TableCell>
                   <TableCell className="font-bold">{item.price} ج.م</TableCell>
+                  <TableCell className="font-bold">{item.pickup_price || 0} ج.م</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button size="icon" variant="ghost" onClick={() => edit(item)}><Pencil className="h-4 w-4" /></Button>

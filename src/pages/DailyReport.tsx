@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Printer, Package, DollarSign, Truck, Undo2, Calendar } from 'lucide-react';
+import { Printer, Package, Truck, Undo2, Calendar } from 'lucide-react';
 
 export default function DailyReport() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -18,7 +18,7 @@ export default function DailyReport() {
     const startOfDay = `${date}T00:00:00`;
     const endOfDay = `${date}T23:59:59`;
     const [ordersRes, statusRes] = await Promise.all([
-      supabase.from('orders').select('*, offices(name), companies(name)').gte('created_at', startOfDay).lte('created_at', endOfDay).order('created_at', { ascending: false }),
+      supabase.from('orders').select('*, offices(name)').gte('created_at', startOfDay).lte('created_at', endOfDay).order('created_at', { ascending: false }),
       supabase.from('order_statuses').select('*'),
     ]);
     setOrders(ordersRes.data || []);
@@ -27,15 +27,21 @@ export default function DailyReport() {
 
   const getStatus = (id: string) => statuses.find(s => s.id === id);
 
-  const deliveredStatuses = statuses.filter(s => s.name?.includes('تسليم') || s.name?.includes('مسلم')).map(s => s.id);
-  const returnedStatuses = statuses.filter(s => s.name?.includes('مرتجع') || s.name?.includes('رفض')).map(s => s.id);
+  const deliveredStatusIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
+  const returnedStatusIds = statuses.filter(s => ['مرتجع', 'رفض ودفع شحن', 'رفض ولم يدفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id);
+  const rejectPaidShipId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
+  const halfShipId = statuses.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
 
   const totalOrders = orders.length;
-  const delivered = orders.filter(o => deliveredStatuses.includes(o.status_id)).length;
-  const returned = orders.filter(o => returnedStatuses.includes(o.status_id)).length;
-  const totalRevenue = orders.reduce((s, o) => s + Number(o.price), 0);
-  const totalShipping = orders.reduce((s, o) => s + Number(o.delivery_price), 0);
-  const totalAll = totalRevenue + totalShipping;
+  const delivered = orders.filter(o => deliveredStatusIds.includes(o.status_id)).length;
+  const returned = orders.filter(o => returnedStatusIds.includes(o.status_id)).length;
+  
+  // Shipping revenue = delivery shipping + reject paid shipping + half ship paid
+  const totalShipping = orders.reduce((s, o) => {
+    if (deliveredStatusIds.includes(o.status_id)) return s + Number(o.delivery_price);
+    if (o.status_id === rejectPaidShipId || o.status_id === halfShipId) return s + Number(o.shipping_paid || 0);
+    return s;
+  }, 0);
 
   const printReport = () => {
     const w = window.open('', '_blank');
@@ -44,9 +50,8 @@ export default function DailyReport() {
       const st = getStatus(o.status_id);
       return `<tr>
         <td>${i + 1}</td><td>${o.barcode || '-'}</td><td>${o.customer_name}</td>
-        <td>${o.offices?.name || '-'}</td><td>${st?.name || '-'}</td>
-        <td>${Number(o.price)} ج.م</td><td>${Number(o.delivery_price)} ج.م</td>
-        <td><b>${Number(o.price) + Number(o.delivery_price)} ج.م</b></td>
+        <td>${o.offices?.name || '-'}</td><td>${o.address || '-'}</td><td>${st?.name || '-'}</td>
+        <td>${Number(o.delivery_price)} ج.م</td>
       </tr>`;
     }).join('');
     w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><style>
@@ -58,9 +63,9 @@ export default function DailyReport() {
     </style></head><body>
       <div class="header">FIRST - التقرير اليومي</div>
       <div class="sub">${new Date(date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} | عدد الأوردرات: ${totalOrders}</div>
-      <table><thead><tr><th>#</th><th>الباركود</th><th>العميل</th><th>المكتب</th><th>الحالة</th><th>السعر</th><th>الشحن</th><th>الإجمالي</th></tr></thead>
+      <table><thead><tr><th>#</th><th>الباركود</th><th>العميل</th><th>المكتب</th><th>العنوان</th><th>الحالة</th><th>الشحن</th></tr></thead>
       <tbody>${rows}</tbody></table>
-      <div class="summary">تسليم: ${delivered} | مرتجع: ${returned} | الإجمالي: ${totalAll.toLocaleString()} ج.م</div>
+      <div class="summary">تسليم: ${delivered} | مرتجع: ${returned} | إيراد الشحن: ${totalShipping.toLocaleString()} ج.م</div>
     </body></html>`);
     w.document.close(); w.focus(); w.print();
   };
@@ -75,7 +80,7 @@ export default function DailyReport() {
         </div>
       </div>
 
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
           <Calendar className="h-5 w-5 mx-auto mb-1 text-primary" />
           <p className="text-xs text-muted-foreground">إجمالي الأوردرات</p>
@@ -92,13 +97,8 @@ export default function DailyReport() {
           <p className="text-xl font-bold text-destructive">{returned}</p>
         </CardContent></Card>
         <Card className="bg-card border-border"><CardContent className="p-3 text-center">
-          <DollarSign className="h-5 w-5 mx-auto mb-1 text-primary" />
-          <p className="text-xs text-muted-foreground">الإيرادات</p>
-          <p className="text-xl font-bold">{totalRevenue.toLocaleString()}</p>
-        </CardContent></Card>
-        <Card className="bg-card border-border col-span-2 lg:col-span-1"><CardContent className="p-3 text-center">
           <Truck className="h-5 w-5 mx-auto mb-1 text-warning" />
-          <p className="text-xs text-muted-foreground">الشحن</p>
+          <p className="text-xs text-muted-foreground">إيراد الشحن</p>
           <p className="text-xl font-bold">{totalShipping.toLocaleString()}</p>
         </CardContent></Card>
       </div>
@@ -113,15 +113,14 @@ export default function DailyReport() {
                   <TableHead className="text-right">الباركود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">المكتب</TableHead>
+                  <TableHead className="text-right">العنوان</TableHead>
                   <TableHead className="text-center">الحالة</TableHead>
-                  <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">الشحن</TableHead>
-                  <TableHead className="text-right">الإجمالي</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orders.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات في هذا اليوم</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد أوردرات في هذا اليوم</TableCell></TableRow>
                 ) : orders.map((o, i) => {
                   const st = getStatus(o.status_id);
                   return (
@@ -130,12 +129,11 @@ export default function DailyReport() {
                       <TableCell className="font-mono text-xs">{o.barcode || '-'}</TableCell>
                       <TableCell className="text-sm">{o.customer_name}</TableCell>
                       <TableCell className="hidden sm:table-cell text-sm">{o.offices?.name || '-'}</TableCell>
+                      <TableCell className="text-sm truncate max-w-[120px]">{o.address || '-'}</TableCell>
                       <TableCell className="text-center">
                         {st ? <Badge style={{ backgroundColor: st.color + '30', color: st.color }} className="text-xs">{st.name}</Badge> : '-'}
                       </TableCell>
-                      <TableCell className="text-sm">{Number(o.price)} ج.م</TableCell>
                       <TableCell className="text-sm">{Number(o.delivery_price)} ج.م</TableCell>
-                      <TableCell className="font-bold text-sm">{Number(o.price) + Number(o.delivery_price)} ج.م</TableCell>
                     </TableRow>
                   );
                 })}
@@ -149,7 +147,7 @@ export default function DailyReport() {
         <div className="flex justify-end">
           <Card className="bg-primary/10 border-primary/30">
             <CardContent className="p-3">
-              <span className="font-bold text-primary">الإجمالي الكلي: {totalAll.toLocaleString()} ج.م</span>
+              <span className="font-bold text-primary">إيراد الشحن: {totalShipping.toLocaleString()} ج.م</span>
             </CardContent>
           </Card>
         </div>

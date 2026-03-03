@@ -21,7 +21,7 @@ export default function ClosedOrders() {
   const loadOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color), companies(name), offices(name)')
+      .select('*, order_statuses(name, color), offices(name)')
       .eq('is_closed', true)
       .order('updated_at', { ascending: false })
       .limit(500);
@@ -85,9 +85,9 @@ export default function ClosedOrders() {
                   <TableHead className="text-right">Tracking</TableHead>
                   <TableHead className="text-right">الكود</TableHead>
                   <TableHead className="text-right">العميل</TableHead>
+                  <TableHead className="text-right">العنوان</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">المنتج</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">الشركة</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
@@ -101,9 +101,9 @@ export default function ClosedOrders() {
                     <TableCell className="font-mono text-xs">{order.tracking_id}</TableCell>
                     <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                     <TableCell className="text-sm">{order.customer_name}</TableCell>
+                    <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                     <TableCell className="hidden sm:table-cell text-sm">{order.product_name}</TableCell>
                     <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                    <TableCell className="hidden md:table-cell text-sm">{order.companies?.name || '-'}</TableCell>
                     <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">

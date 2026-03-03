@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,24 +19,29 @@ export default function GlobalSearch() {
   const [editOrder, setEditOrder] = useState<any | null>(null);
   const [editStatusId, setEditStatusId] = useState('');
 
+  useEffect(() => {
+    supabase.from('order_statuses').select('*').order('sort_order').then(({ data }) => setStatuses(data || []));
+  }, []);
+
+  // Auto-search with debounce
+  useEffect(() => {
+    if (!search.trim()) { setResults([]); return; }
+    const timer = setTimeout(() => doSearch(), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const doSearch = async () => {
     if (!search.trim()) return;
     setLoading(true);
     const term = search.trim();
 
-    // Search across all orders (closed and not closed)
     const { data } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color), offices(name), companies(name)')
-      .or(`barcode.ilike.%${term}%,customer_code.ilike.%${term}%,customer_phone.ilike.%${term}%,tracking_id.ilike.%${term}%,customer_name.ilike.%${term}%`)
+      .select('*, order_statuses(name, color), offices(name)')
+      .or(`barcode.ilike.%${term}%,customer_code.ilike.%${term}%,customer_phone.ilike.%${term}%,tracking_id.ilike.%${term}%,customer_name.ilike.%${term}%,address.ilike.%${term}%`)
       .order('created_at', { ascending: false })
       .limit(100);
     setResults(data || []);
-
-    if (!statuses.length) {
-      const { data: sts } = await supabase.from('order_statuses').select('*').order('sort_order');
-      setStatuses(sts || []);
-    }
     setLoading(false);
   };
 
@@ -57,16 +62,14 @@ export default function GlobalSearch() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">بحث شامل</h1>
-      <div className="flex gap-3">
-        <div className="relative flex-1 max-w-lg">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="بحث بالباركود / الكود / رقم الهاتف / الاسم..." value={search}
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && doSearch()}
-            className="pr-9 bg-secondary border-border" />
-        </div>
-        <Button onClick={doSearch} disabled={loading}>{loading ? 'جاري البحث...' : 'بحث'}</Button>
+      <div className="relative max-w-lg">
+        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="بحث بالباركود / الكود / رقم الهاتف / الاسم / العنوان..." value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pr-9 bg-secondary border-border" />
       </div>
+
+      {loading && <p className="text-sm text-muted-foreground">جاري البحث...</p>}
 
       {results.length > 0 && (
         <Card className="bg-card border-border">
@@ -79,11 +82,15 @@ export default function GlobalSearch() {
                     <TableHead className="text-right">الكود</TableHead>
                     <TableHead className="text-right">الباركود</TableHead>
                     <TableHead className="text-right">العميل</TableHead>
+                    <TableHead className="text-right">العنوان</TableHead>
                     <TableHead className="text-right">الهاتف</TableHead>
                     <TableHead className="text-right">المنتج</TableHead>
+                    <TableHead className="text-right">السعر</TableHead>
+                    <TableHead className="text-right">الشحن</TableHead>
                     <TableHead className="text-right">الإجمالي</TableHead>
                     <TableHead className="text-right">المكتب</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">ملاحظات</TableHead>
                     <TableHead className="text-right">مقفل</TableHead>
                     <TableHead className="text-right">تعديل</TableHead>
                   </TableRow>
@@ -95,15 +102,19 @@ export default function GlobalSearch() {
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="font-mono text-xs">{order.barcode || '-'}</TableCell>
                       <TableCell>{order.customer_name}</TableCell>
+                      <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                       <TableCell dir="ltr">{order.customer_phone}</TableCell>
                       <TableCell>{order.product_name}</TableCell>
-                      <TableCell>{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
+                      <TableCell>{Number(order.price)} ج.م</TableCell>
+                      <TableCell>{Number(order.delivery_price)} ج.م</TableCell>
+                      <TableCell className="font-bold">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell>{order.offices?.name || '-'}</TableCell>
                       <TableCell>
                         <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                           {order.order_statuses?.name || '-'}
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-xs truncate max-w-[100px]">{order.notes || '-'}</TableCell>
                       <TableCell>{order.is_closed ? '✅' : '❌'}</TableCell>
                       <TableCell>
                         <Button size="icon" variant="ghost" onClick={() => openEdit(order)}>

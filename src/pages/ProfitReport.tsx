@@ -4,13 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { TrendingUp, Calculator, DollarSign, Minus } from 'lucide-react';
+import { TrendingUp, Calculator, DollarSign } from 'lucide-react';
 
 export default function ProfitReport() {
   const [orders, setOrders] = useState<any[]>([]);
   const [offices, setOffices] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
-  const [officePayments, setOfficePayments] = useState<any[]>([]);
   const [period, setPeriod] = useState('30');
 
   useEffect(() => { loadData(); }, [period]);
@@ -18,45 +17,54 @@ export default function ProfitReport() {
   const loadData = async () => {
     const daysAgo = new Date();
     daysAgo.setDate(daysAgo.getDate() - Number(period));
-    const [ordersRes, officesRes, statusRes, paymentsRes] = await Promise.all([
+    const [ordersRes, officesRes, statusRes] = await Promise.all([
       supabase.from('orders').select('*').gte('created_at', daysAgo.toISOString()),
       supabase.from('offices').select('*'),
       supabase.from('order_statuses').select('*'),
-      supabase.from('office_payments').select('*').gte('created_at', daysAgo.toISOString()),
     ]);
     setOrders(ordersRes.data || []);
     setOffices(officesRes.data || []);
     setStatuses(statusRes.data || []);
-    setOfficePayments(paymentsRes.data || []);
   };
 
-  const deliveredStatuses = statuses.filter(s => s.name?.includes('تسليم') || s.name?.includes('مسلم')).map(s => s.id);
-  const deliveredOrders = orders.filter(o => deliveredStatuses.includes(o.status_id));
+  const deliveredStatusIds = statuses.filter(s => s.name === 'تم التسليم' || s.name === 'تسليم جزئي').map(s => s.id);
+  const returnedStatusIds = statuses.filter(s => ['مرتجع', 'رفض ولم يدفع شحن', 'تهرب', 'ملغي', 'لم يرد'].includes(s.name)).map(s => s.id);
+  const rejectPaidShipId = statuses.find(s => s.name === 'رفض ودفع شحن')?.id;
+  const halfShipId = statuses.find(s => s.name === 'استلم ودفع نص الشحن')?.id;
 
-  const totalRevenue = deliveredOrders.reduce((s, o) => s + Number(o.price), 0);
-  const totalShipping = deliveredOrders.reduce((s, o) => s + Number(o.delivery_price), 0);
-  const totalPayments = officePayments.reduce((s, p) => s + Number(p.amount), 0);
-  const netProfit = totalShipping - totalPayments;
+  const deliveredOrders = orders.filter(o => deliveredStatusIds.includes(o.status_id));
+  const rejectedOrders = orders.filter(o => returnedStatusIds.includes(o.status_id));
+  const rejectPaidOrders = orders.filter(o => o.status_id === rejectPaidShipId || o.status_id === halfShipId);
+
+  const totalDelivered = deliveredOrders.length;
+  const totalRejected = rejectedOrders.length;
+  const totalRejectPaid = rejectPaidOrders.length;
+
+  // Shipping from deliveries
+  const deliveredShipping = deliveredOrders.reduce((s, o) => s + Number(o.delivery_price), 0);
+  // Shipping from reject+paid
+  const rejectPaidShipping = rejectPaidOrders.reduce((s, o) => s + Number(o.shipping_paid || 0), 0);
+  const totalShippingRevenue = deliveredShipping + rejectPaidShipping;
+
+  // Average per order = 20 EGP
+  const avgPerOrder = 20;
+  const netProfit = (totalDelivered + totalRejectPaid) * avgPerOrder;
 
   // Per-office profit
   const officeProfit = offices.map(o => {
-    const offOrders = deliveredOrders.filter(ord => ord.office_id === o.id);
-    const shipping = offOrders.reduce((s, ord) => s + Number(ord.delivery_price), 0);
-    const payments = officePayments.filter(p => p.office_id === o.id).reduce((s, p) => s + Number(p.amount), 0);
+    const offDelivered = deliveredOrders.filter(ord => ord.office_id === o.id);
+    const offRejectPaid = rejectPaidOrders.filter(ord => ord.office_id === o.id);
+    const shipping = offDelivered.reduce((s, ord) => s + Number(ord.delivery_price), 0) + offRejectPaid.reduce((s, ord) => s + Number(ord.shipping_paid || 0), 0);
     return {
       name: o.name,
       shipping,
-      payments,
-      profit: shipping - payments,
-      orders: offOrders.length,
+      orders: offDelivered.length + offRejectPaid.length,
     };
-  }).filter(o => o.orders > 0).sort((a, b) => b.profit - a.profit);
+  }).filter(o => o.orders > 0).sort((a, b) => b.shipping - a.shipping);
 
   const chartData = officeProfit.slice(0, 8).map(o => ({
     name: o.name.length > 10 ? o.name.slice(0, 10) + '..' : o.name,
     شحن: o.shipping,
-    مدفوع: o.payments,
-    ربح: o.profit,
   }));
 
   return (
@@ -78,32 +86,32 @@ export default function ProfitReport() {
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         <Card className="bg-card border-border"><CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-primary/20"><DollarSign className="h-5 w-5 text-primary" /></div>
-            <div><p className="text-xs text-muted-foreground">إجمالي الإيرادات</p><p className="text-lg font-bold">{totalRevenue.toLocaleString()} ج.م</p></div>
-          </div>
-        </CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-warning/20"><Calculator className="h-5 w-5 text-warning" /></div>
-            <div><p className="text-xs text-muted-foreground">إجمالي الشحن</p><p className="text-lg font-bold">{totalShipping.toLocaleString()} ج.م</p></div>
-          </div>
-        </CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg p-2 bg-destructive/20"><Minus className="h-5 w-5 text-destructive" /></div>
-            <div><p className="text-xs text-muted-foreground">المدفوعات</p><p className="text-lg font-bold">{totalPayments.toLocaleString()} ج.م</p></div>
-          </div>
-        </CardContent></Card>
-        <Card className="bg-card border-border"><CardContent className="p-4">
-          <div className="flex items-center gap-3">
             <div className="rounded-lg p-2 bg-success/20"><TrendingUp className="h-5 w-5 text-success" /></div>
-            <div><p className="text-xs text-muted-foreground">صافي الربح</p><p className={`text-lg font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{netProfit.toLocaleString()} ج.م</p></div>
+            <div><p className="text-xs text-muted-foreground">تسليمات</p><p className="text-lg font-bold">{totalDelivered}</p></div>
+          </div>
+        </CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg p-2 bg-destructive/20"><Calculator className="h-5 w-5 text-destructive" /></div>
+            <div><p className="text-xs text-muted-foreground">مرفوض</p><p className="text-lg font-bold">{totalRejected}</p></div>
+          </div>
+        </CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg p-2 bg-warning/20"><DollarSign className="h-5 w-5 text-warning" /></div>
+            <div><p className="text-xs text-muted-foreground">رفض ودفع شحن</p><p className="text-lg font-bold">{totalRejectPaid}</p></div>
+          </div>
+        </CardContent></Card>
+        <Card className="bg-card border-border"><CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg p-2 bg-primary/20"><TrendingUp className="h-5 w-5 text-primary" /></div>
+            <div><p className="text-xs text-muted-foreground">صافي الربح (متوسط {avgPerOrder} ج/أوردر)</p><p className={`text-lg font-bold ${netProfit >= 0 ? 'text-success' : 'text-destructive'}`}>{netProfit.toLocaleString()} ج.م</p></div>
           </div>
         </CardContent></Card>
       </div>
 
       <Card className="bg-card border-border">
-        <CardHeader className="pb-2"><CardTitle className="text-base">الربح حسب المكتب</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base">إيراد الشحن حسب المكتب</CardTitle></CardHeader>
         <CardContent>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -114,8 +122,6 @@ export default function ProfitReport() {
                 <Tooltip contentStyle={{ background: 'hsl(220,20%,13%)', border: '1px solid hsl(220,16%,20%)', borderRadius: 8, color: '#fff' }} />
                 <Legend />
                 <Bar dataKey="شحن" fill="hsl(38,92%,50%)" />
-                <Bar dataKey="مدفوع" fill="hsl(0,72%,51%)" />
-                <Bar dataKey="ربح" fill="hsl(142,76%,36%)" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -131,8 +137,6 @@ export default function ProfitReport() {
                   <TableHead className="text-right">المكتب</TableHead>
                   <TableHead className="text-center">الأوردرات</TableHead>
                   <TableHead className="text-right">الشحن</TableHead>
-                  <TableHead className="text-right">المدفوع</TableHead>
-                  <TableHead className="text-right">الربح</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -140,9 +144,7 @@ export default function ProfitReport() {
                   <TableRow key={o.name} className="border-border">
                     <TableCell className="font-medium">{o.name}</TableCell>
                     <TableCell className="text-center">{o.orders}</TableCell>
-                    <TableCell>{o.shipping.toLocaleString()} ج.م</TableCell>
-                    <TableCell>{o.payments.toLocaleString()} ج.م</TableCell>
-                    <TableCell className={`font-bold ${o.profit >= 0 ? 'text-success' : 'text-destructive'}`}>{o.profit.toLocaleString()} ج.م</TableCell>
+                    <TableCell className="font-bold">{o.shipping.toLocaleString()} ج.م</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

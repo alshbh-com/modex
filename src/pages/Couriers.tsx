@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -23,7 +24,7 @@ export default function Couriers() {
   const [notes, setNotes] = useState<any[]>([]);
   const [noteText, setNoteText] = useState('');
   const [editDialog, setEditDialog] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: '', phone: '', address: '', notes: '' });
+  const [editForm, setEditForm] = useState({ full_name: '', phone: '', address: '', coverage_areas: '', notes: '' });
 
   useEffect(() => { loadCouriers(); }, []);
 
@@ -79,7 +80,7 @@ export default function Couriers() {
 
   const openEditCourier = (c: any) => {
     setEditDialog(c);
-    setEditForm({ full_name: c.full_name || '', phone: c.phone || '', address: c.address || '', notes: c.notes || '' });
+    setEditForm({ full_name: c.full_name || '', phone: c.phone || '', address: c.address || '', coverage_areas: c.coverage_areas || '', notes: c.notes || '' });
   };
   const saveEditCourier = async () => {
     if (!editDialog) return;
@@ -101,6 +102,7 @@ export default function Couriers() {
                 <TableHead className="text-right">الاسم</TableHead>
                 <TableHead className="text-right">الهاتف</TableHead>
                 <TableHead className="text-right">العنوان</TableHead>
+                <TableHead className="text-right">مناطق التغطية</TableHead>
                 <TableHead className="text-right">ملاحظات</TableHead>
                 <TableHead className="text-right">الحالة</TableHead>
                 <TableHead className="text-right">إجراء</TableHead>
@@ -108,12 +110,13 @@ export default function Couriers() {
             </TableHeader>
             <TableBody>
               {couriers.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">لا يوجد مندوبين</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا يوجد مندوبين</TableCell></TableRow>
               ) : couriers.map(c => (
                 <TableRow key={c.id} className={`border-border ${selectedCourier === c.id ? 'bg-secondary' : ''}`}>
                   <TableCell className="font-medium">{c.full_name}</TableCell>
                   <TableCell dir="ltr">{c.phone || '-'}</TableCell>
                   <TableCell>{c.address || '-'}</TableCell>
+                  <TableCell className="max-w-32 truncate">{c.coverage_areas || '-'}</TableCell>
                   <TableCell className="max-w-32 truncate">{c.notes || '-'}</TableCell>
                   <TableCell><Badge variant={c.is_active ? 'default' : 'secondary'}>{c.is_active ? 'نشط' : 'غير نشط'}</Badge></TableCell>
                   <TableCell>
@@ -186,7 +189,6 @@ export default function Couriers() {
         </div>
       )}
 
-      {/* Edit courier dialog */}
       <Dialog open={!!editDialog} onOpenChange={v => { if (!v) setEditDialog(null); }}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle>تعديل بيانات المندوب</DialogTitle></DialogHeader>
@@ -194,13 +196,13 @@ export default function Couriers() {
             <div className="space-y-2"><Label>الاسم</Label><Input value={editForm.full_name} onChange={e => setEditForm(f => ({ ...f, full_name: e.target.value }))} className="bg-secondary border-border" /></div>
             <div className="space-y-2"><Label>الهاتف</Label><Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} className="bg-secondary border-border" dir="ltr" /></div>
             <div className="space-y-2"><Label>العنوان</Label><Input value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} className="bg-secondary border-border" /></div>
+            <div className="space-y-2"><Label>مناطق التغطية</Label><Input value={editForm.coverage_areas} onChange={e => setEditForm(f => ({ ...f, coverage_areas: e.target.value }))} className="bg-secondary border-border" placeholder="مثال: المعادي، حلوان، التجمع" /></div>
             <div className="space-y-2"><Label>ملاحظات</Label><Textarea value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} className="bg-secondary border-border" rows={2} /></div>
             <Button onClick={saveEditCourier} className="w-full">حفظ التعديل</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Notes dialog */}
       <Dialog open={!!notesDialog} onOpenChange={(v) => { if (!v) { setNotesDialog(null); setNoteText(''); } }}>
         <DialogContent className="bg-card border-border">
           <DialogHeader><DialogTitle>ملاحظات - {notesDialog?.tracking_id}</DialogTitle></DialogHeader>

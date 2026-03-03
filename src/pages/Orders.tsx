@@ -17,9 +17,7 @@ export default function Orders() {
   const [orders, setOrders] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [filterOffice, setFilterOffice] = useState('all');
-  const [filterCompany, setFilterCompany] = useState('all');
   const [offices, setOffices] = useState<any[]>([]);
-  const [companies, setCompanies] = useState<any[]>([]);
   const [couriers, setCouriers] = useState<any[]>([]);
   const [courierMap, setCourierMap] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -30,14 +28,12 @@ export default function Orders() {
   useEffect(() => { loadOrders(); loadFilters(); }, []);
 
   const loadFilters = async () => {
-    const [o, c, r, s] = await Promise.all([
+    const [o, r, s] = await Promise.all([
       supabase.from('offices').select('id, name').order('name'),
-      supabase.from('companies').select('id, name').order('name'),
       supabase.from('user_roles').select('user_id').eq('role', 'courier'),
       supabase.from('order_statuses').select('*').order('sort_order'),
     ]);
     setOffices(o.data || []);
-    setCompanies(c.data || []);
     setStatuses(s.data || []);
     if (r.data && r.data.length > 0) {
       const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', r.data.map(x => x.user_id));
@@ -51,7 +47,7 @@ export default function Orders() {
   const loadOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('*, order_statuses(name, color), companies(name), offices(name)')
+      .select('*, order_statuses(name, color), offices(name)')
       .eq('is_closed', false)
       .order('created_at', { ascending: false })
       .limit(500);
@@ -64,8 +60,7 @@ export default function Orders() {
       o.customer_phone?.includes(search) || o.barcode?.includes(search) || o.customer_code?.includes(search) ||
       o.address?.includes(search);
     const matchOffice = filterOffice === 'all' || o.office_id === filterOffice;
-    const matchCompany = filterCompany === 'all' || o.company_id === filterCompany;
-    return matchSearch && matchOffice && matchCompany;
+    return matchSearch && matchOffice;
   });
 
   const toggleSelect = (id: string) => {
@@ -91,10 +86,7 @@ export default function Orders() {
 
   const unassignCourier = async () => {
     if (selected.size === 0) { toast.error('اختر أوردرات أولاً'); return; }
-    // Reset status to first status (or null) when unassigning
-    const defaultStatus = statuses.length > 0 ? statuses[0] : null;
-    const updateData: any = { courier_id: null };
-    if (defaultStatus) updateData.status_id = defaultStatus.id;
+    const updateData: any = { courier_id: null, status_id: null };
     
     const { error } = await supabase.from('orders').update(updateData).in('id', Array.from(selected));
     if (error) { toast.error(error.message); return; }
@@ -150,13 +142,6 @@ export default function Orders() {
             {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Select value={filterCompany} onValueChange={setFilterCompany}>
-          <SelectTrigger className="w-32 sm:w-40 bg-secondary border-border"><SelectValue placeholder="الشركة" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">كل الشركات</SelectItem>
-            {companies.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
       </div>
 
       {selected.size > 0 && (
@@ -189,7 +174,6 @@ export default function Orders() {
                   <TableHead className="text-right">السعر</TableHead>
                   <TableHead className="text-right">الشحن</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
-                  <TableHead className="text-right hidden lg:table-cell">الشركة</TableHead>
                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                   <TableHead className="text-right">المندوب</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
@@ -198,7 +182,7 @@ export default function Orders() {
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={15} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={14} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
                 ) : filtered.map((order) => {
                   const hasCourier = !!order.courier_id;
                   return (
@@ -213,7 +197,6 @@ export default function Orders() {
                       <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm">{order.companies?.name || '-'}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
                       <TableCell className={`text-sm ${hasCourier ? 'font-medium' : 'text-muted-foreground'}`}>
                         {hasCourier ? (courierMap[order.courier_id] || 'مندوب') : 'غير معين'}

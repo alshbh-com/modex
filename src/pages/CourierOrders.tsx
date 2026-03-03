@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { LogOut, Eye, Phone, MessageSquare, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
+const SHIPPING_OPTIONS = [10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100];
+
 export default function CourierOrders() {
   const { user, logout } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
@@ -18,7 +20,6 @@ export default function CourierOrders() {
   const [noteText, setNoteText] = useState('');
   const [notes, setNotes] = useState<any[]>([]);
   const [savingNote, setSavingNote] = useState(false);
-  const [shippingCost, setShippingCost] = useState('');
   const [shippingDialog, setShippingDialog] = useState<any | null>(null);
   const [partialDialog, setPartialDialog] = useState<any | null>(null);
   const [partialAmount, setPartialAmount] = useState('');
@@ -40,14 +41,19 @@ export default function CourierOrders() {
 
   const totalPrice = orders.reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
 
-  const rejectWithShipStatus = statuses.find(s => s.name === 'رفض واخد شحن');
+  const rejectWithShipStatus = statuses.find(s => s.name === 'رفض ودفع شحن');
   const postponedStatus = statuses.find(s => s.name === 'مؤجل');
   const partialDeliveryStatus = statuses.find(s => s.name === 'تسليم جزئي');
+  const receivedHalfShipStatus = statuses.find(s => s.name === 'استلم ودفع نص الشحن');
 
   const updateStatus = async (orderId: string, statusId: string) => {
     if (statusId === rejectWithShipStatus?.id) {
-      setShippingDialog({ orderId, statusId });
-      setShippingCost('');
+      setShippingDialog({ orderId, statusId, type: 'reject' });
+      return;
+    }
+
+    if (statusId === receivedHalfShipStatus?.id) {
+      setShippingDialog({ orderId, statusId, type: 'half_ship' });
       return;
     }
 
@@ -61,21 +67,20 @@ export default function CourierOrders() {
     await supabase.from('orders').update({ status_id: statusId }).eq('id', orderId);
 
     if (statusId === postponedStatus?.id) {
-      await supabase.from('orders').update({ courier_id: null }).eq('id', orderId);
+      await supabase.from('orders').update({ courier_id: null, status_id: null }).eq('id', orderId);
     }
 
     toast.success('تم تحديث الحالة');
     load();
   };
 
-  const confirmRejectWithShip = async () => {
+  const confirmShippingPaid = async (amount: number) => {
     if (!shippingDialog) return;
-    const cost = parseFloat(shippingCost) || 0;
     await supabase.from('orders').update({ 
       status_id: shippingDialog.statusId,
-      delivery_price: cost 
+      shipping_paid: amount,
     }).eq('id', shippingDialog.orderId);
-    toast.success(`تم - مصاريف الشحن: ${cost} ج.م`);
+    toast.success(`تم - مصاريف الشحن المدفوعة: ${amount} ج.م`);
     setShippingDialog(null);
     load();
   };
@@ -127,7 +132,6 @@ export default function CourierOrders() {
           </Button>
         </div>
 
-        {/* Total */}
         <Card className="bg-card border-border">
           <CardContent className="p-3 flex justify-between items-center">
             <span className="text-sm text-muted-foreground">إجمالي الأوردرات: {orders.length}</span>
@@ -164,7 +168,7 @@ export default function CourierOrders() {
                       </TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">{order.customer_name}</TableCell>
-                      <TableCell className="text-sm truncate max-w-[120px]">{order.address || order.governorate || '-'}</TableCell>
+                      <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                       <TableCell className="text-sm">{order.product_name}</TableCell>
                       <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                       <TableCell>
@@ -187,13 +191,20 @@ export default function CourierOrders() {
         </Card>
       </div>
 
-      {/* Reject with shipping dialog */}
+      {/* Shipping amount dialog with preset options */}
       <Dialog open={!!shippingDialog} onOpenChange={v => { if (!v) setShippingDialog(null); }}>
         <DialogContent className="bg-card border-border">
-          <DialogHeader><DialogTitle>رفض واخد شحن - أدخل مصاريف الشحن</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <Input type="number" value={shippingCost} onChange={e => setShippingCost(e.target.value)} placeholder="مصاريف الشحن" className="bg-secondary border-border" />
-            <Button onClick={confirmRejectWithShip} className="w-full">تأكيد</Button>
+          <DialogHeader>
+            <DialogTitle>
+              {shippingDialog?.type === 'half_ship' ? 'استلم ودفع نص الشحن - اختر المبلغ' : 'رفض ودفع شحن - اختر مبلغ الشحن'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-2">
+            {SHIPPING_OPTIONS.map(amount => (
+              <Button key={amount} variant="outline" className="text-lg py-6" onClick={() => confirmShippingPaid(amount)}>
+                {amount} ج.م
+              </Button>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
@@ -225,15 +236,14 @@ export default function CourierOrders() {
                 <div><span className="text-muted-foreground">الكود:</span> <strong>{selectedOrder.customer_code || '-'}</strong></div>
                 <div><span className="text-muted-foreground">المنتج:</span> <strong>{selectedOrder.product_name}</strong></div>
                 <div><span className="text-muted-foreground">الكمية:</span> <strong>{selectedOrder.quantity}</strong></div>
-                <div><span className="text-muted-foreground">المحافظة:</span> <strong>{selectedOrder.governorate}</strong></div>
+                <div><span className="text-muted-foreground">المكتب:</span> <strong>{selectedOrder.offices?.name || '-'}</strong></div>
                 <div className="col-span-2"><span className="text-muted-foreground">العنوان:</span> <strong>{selectedOrder.address || '-'}</strong></div>
                 <div><span className="text-muted-foreground">السعر:</span> <strong>{selectedOrder.price} ج.م</strong></div>
                 <div><span className="text-muted-foreground">الشحن:</span> <strong>{selectedOrder.delivery_price} ج.م</strong></div>
                 <div className="col-span-2"><span className="text-muted-foreground">الإجمالي:</span> <strong className="text-lg">{Number(selectedOrder.price) + Number(selectedOrder.delivery_price)} ج.م</strong></div>
                 <div><span className="text-muted-foreground">اللون:</span> <strong>{selectedOrder.color || '-'}</strong></div>
                 <div><span className="text-muted-foreground">المقاس:</span> <strong>{selectedOrder.size || '-'}</strong></div>
-                <div><span className="text-muted-foreground">الباركود:</span> <strong dir="ltr">{selectedOrder.barcode || '-'}</strong></div>
-                <div><span className="text-muted-foreground">المكتب:</span> <strong>{selectedOrder.offices?.name || '-'}</strong></div>
+                {selectedOrder.notes && <div className="col-span-2"><span className="text-muted-foreground">ملاحظات:</span> <strong>{selectedOrder.notes}</strong></div>}
               </div>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" className="flex-1" asChild>

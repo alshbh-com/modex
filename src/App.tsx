@@ -14,11 +14,9 @@ import ClosedOrders from "@/pages/ClosedOrders";
 import GlobalSearch from "@/pages/GlobalSearch";
 import Offices from "@/pages/Offices";
 import DeliveryPrices from "@/pages/DeliveryPrices";
-import Companies from "@/pages/Companies";
 import Products from "@/pages/Products";
 import Couriers from "@/pages/Couriers";
 import CourierCollections from "@/pages/CourierCollections";
-import CompanyAccounts from "@/pages/CompanyAccounts";
 import OfficeAccounts from "@/pages/OfficeAccounts";
 import Advances from "@/pages/Advances";
 import PrintSticker from "@/pages/PrintSticker";
@@ -74,14 +72,12 @@ const App = () => (
               <Route path="/search" element={<GlobalSearch />} />
               <Route path="/offices" element={<Offices />} />
               <Route path="/delivery-prices" element={<DeliveryPrices />} />
-              <Route path="/companies" element={<Companies />} />
               <Route path="/products" element={<Products />} />
               <Route path="/couriers" element={<Couriers />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/customers" element={<CustomersPage />} />
               <Route path="/courier-collections" element={<CourierCollections />} />
               <Route path="/collections" element={<Navigate to="/courier-collections" replace />} />
-              <Route path="/company-accounts" element={<CompanyAccounts />} />
               <Route path="/office-accounts" element={<OfficeAccounts />} />
               <Route path="/advances" element={<Advances />} />
               <Route path="/print" element={<PrintSticker />} />

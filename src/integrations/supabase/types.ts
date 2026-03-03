@@ -218,7 +218,8 @@ export type Database = {
           created_at: string
           governorate: string
           id: string
-          office_id: string
+          office_id: string | null
+          pickup_price: number
           price: number
           updated_at: string
         }
@@ -226,7 +227,8 @@ export type Database = {
           created_at?: string
           governorate?: string
           id?: string
-          office_id: string
+          office_id?: string | null
+          pickup_price?: number
           price?: number
           updated_at?: string
         }
@@ -234,7 +236,8 @@ export type Database = {
           created_at?: string
           governorate?: string
           id?: string
-          office_id?: string
+          office_id?: string | null
+          pickup_price?: number
           price?: number
           updated_at?: string
         }
@@ -254,7 +257,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
-          office_id: string
+          office_id: string | null
           paid_by: string | null
           type: string
         }
@@ -263,7 +266,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
-          office_id: string
+          office_id?: string | null
           paid_by?: string | null
           type?: string
         }
@@ -272,7 +275,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
-          office_id?: string
+          office_id?: string | null
           paid_by?: string | null
           type?: string
         }
@@ -398,12 +401,14 @@ export type Database = {
           governorate: string | null
           id: string
           is_closed: boolean
+          notes: string | null
           office_id: string | null
           partial_amount: number | null
           price: number
           product_id: string | null
           product_name: string
           quantity: number
+          shipping_paid: number | null
           size: string | null
           status_id: string | null
           tracking_id: string
@@ -425,12 +430,14 @@ export type Database = {
           governorate?: string | null
           id?: string
           is_closed?: boolean
+          notes?: string | null
           office_id?: string | null
           partial_amount?: number | null
           price?: number
           product_id?: string | null
           product_name?: string
           quantity?: number
+          shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
           tracking_id: string
@@ -452,12 +459,14 @@ export type Database = {
           governorate?: string | null
           id?: string
           is_closed?: boolean
+          notes?: string | null
           office_id?: string | null
           partial_amount?: number | null
           price?: number
           product_id?: string | null
           product_name?: string
           quantity?: number
+          shipping_paid?: number | null
           size?: string | null
           status_id?: string | null
           tracking_id?: string
@@ -528,6 +537,7 @@ export type Database = {
       profiles: {
         Row: {
           address: string | null
+          coverage_areas: string | null
           created_at: string
           full_name: string
           id: string
@@ -541,6 +551,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          coverage_areas?: string | null
           created_at?: string
           full_name?: string
           id: string
@@ -554,6 +565,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          coverage_areas?: string | null
           created_at?: string
           full_name?: string
           id?: string
