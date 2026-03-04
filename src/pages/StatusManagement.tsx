@@ -153,12 +153,7 @@ export default function StatusManagement() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-center">
-                        {!s.is_fixed && false && (
-                          <>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => edit(s)}><Edit className="h-3.5 w-3.5" /></Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => remove(s.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                          </>
-                        )}
+                        <Badge variant="outline" className="text-xs gap-1"><Lock className="h-3 w-3" />محمية</Badge>
                       </div>
                     </TableCell>
                   </TableRow>
