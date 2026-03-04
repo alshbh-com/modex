@@ -83,11 +83,11 @@ export default function PrintSticker() {
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
         .sticker { width: 50mm; height: 100mm; padding: 4mm 1.5mm 4mm 10mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; direction: rtl; text-align: right; }
         .sticker:last-child { page-break-after: auto; }
-        .header { text-align: left; font-size: 8px; font-weight: bold; margin-bottom: 2px; direction: ltr; }
-        .barcode-num { font-family: monospace; font-size: 8px; font-weight: bold; margin-bottom: 3px; text-align: right; }
-        .info { margin: 1px 0; font-size: 5px; line-height: 1.3; text-align: right; word-wrap: break-word; overflow-wrap: break-word; }
-        .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 5px; }
-        .total { font-size: 8px; font-weight: bold; text-align: center; border: 1px solid #000; padding: 2px; margin-top: auto; }
+        .header { text-align: left; font-size: 6px; font-weight: bold; margin-bottom: 1px; direction: ltr; }
+        .barcode-num { font-family: monospace; font-size: 6px; font-weight: bold; margin-bottom: 2px; text-align: right; }
+        .info { margin: 1px 0; font-size: 4px; line-height: 1.2; text-align: right; word-wrap: break-word; overflow-wrap: break-word; }
+        .row { display: flex; justify-content: space-between; margin: 1px 0; font-size: 4px; }
+        .total { font-size: 6px; font-weight: bold; text-align: center; border: 1px solid #000; padding: 1px; margin-top: auto; }
       </style></head><body>${stickers}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
