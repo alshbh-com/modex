@@ -81,11 +81,11 @@ export default function PrintSticker() {
       <style>
         @page { size: 50mm 100mm; margin: 0; }
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
-        .sticker { width: 50mm; height: 100mm; padding: 4mm 3mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; }
+        .sticker { width: 50mm; height: 100mm; padding: 4mm 3mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; direction: rtl; text-align: right; }
         .sticker:last-child { page-break-after: auto; }
-        .header { text-align: left; font-size: 18px; font-weight: bold; margin-bottom: 6px; }
-        .barcode-num { font-family: monospace; font-size: 20px; font-weight: bold; margin-bottom: 8px; }
-        .info { margin: 3px 0; font-size: 12px; line-height: 1.5; }
+        .header { text-align: left; font-size: 18px; font-weight: bold; margin-bottom: 6px; direction: ltr; }
+        .barcode-num { font-family: monospace; font-size: 20px; font-weight: bold; margin-bottom: 8px; text-align: right; }
+        .info { margin: 3px 0; font-size: 12px; line-height: 1.5; text-align: right; word-wrap: break-word; overflow-wrap: break-word; }
         .row { display: flex; justify-content: space-between; margin: 3px 0; font-size: 12px; }
         .total { font-size: 18px; font-weight: bold; text-align: center; border: 2px solid #000; padding: 6px; margin-top: auto; }
       </style></head><body>${stickers}</body></html>`);

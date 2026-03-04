@@ -1,22 +1,13 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Edit, ArrowUp, ArrowDown, Lock } from 'lucide-react';
-import { toast } from 'sonner';
-import { logActivity } from '@/lib/activityLogger';
+import { ArrowUp, ArrowDown, Lock } from 'lucide-react';
 
 export default function StatusManagement() {
   const [statuses, setStatuses] = useState<any[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [color, setColor] = useState('#3b82f6');
   const [orderCounts, setOrderCounts] = useState<Record<string, number>>({});
 
   useEffect(() => { loadData(); }, []);
@@ -30,40 +21,6 @@ export default function StatusManagement() {
     const counts: Record<string, number> = {};
     (ordersRes.data || []).forEach(o => { if (o.status_id) counts[o.status_id] = (counts[o.status_id] || 0) + 1; });
     setOrderCounts(counts);
-  };
-
-  const save = async () => {
-    if (!name.trim()) { toast.error('أدخل اسم الحالة'); return; }
-    if (editId) {
-      const editing = statuses.find(s => s.id === editId);
-      if (editing?.is_fixed) { toast.error('لا يمكن تعديل حالة ثابتة'); return; }
-      await supabase.from('order_statuses').update({ name, color }).eq('id', editId);
-      logActivity('تعديل حالة', { status_name: name });
-      toast.success('تم التحديث');
-    } else {
-      const maxOrder = statuses.length > 0 ? Math.max(...statuses.map(s => s.sort_order)) + 1 : 0;
-      await supabase.from('order_statuses').insert({ name, color, sort_order: maxOrder, is_fixed: false });
-      logActivity('إضافة حالة جديدة', { status_name: name });
-      toast.success('تمت الإضافة');
-    }
-    setDialogOpen(false); setEditId(null); setName(''); setColor('#3b82f6');
-    loadData();
-  };
-
-  const remove = async (id: string) => {
-    const s = statuses.find(st => st.id === id);
-    if (s?.is_fixed) { toast.error('هذه حالة ثابتة لا يمكن حذفها'); return; }
-    if (orderCounts[id] > 0) { toast.error('لا يمكن حذف حالة مستخدمة في أوردرات'); return; }
-    if (!confirm('حذف هذه الحالة؟')) return;
-    await supabase.from('order_statuses').delete().eq('id', id);
-    logActivity('حذف حالة', { status_name: s?.name });
-    toast.success('تم الحذف');
-    loadData();
-  };
-
-  const edit = (s: any) => {
-    if (s.is_fixed) { toast.error('لا يمكن تعديل حالة ثابتة'); return; }
-    setEditId(s.id); setName(s.name); setColor(s.color || '#3b82f6'); setDialogOpen(true);
   };
 
   const moveUp = async (index: number) => {
@@ -92,26 +49,6 @@ export default function StatusManagement() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">إدارة الحالات</h1>
-        <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) { setEditId(null); setName(''); setColor('#3b82f6'); } }}>
-          <DialogTrigger asChild>
-            <Button size="sm"><Plus className="h-4 w-4 ml-1" />إضافة حالة</Button>
-          </DialogTrigger>
-          <DialogContent className="bg-card border-border">
-            <DialogHeader><DialogTitle>{editId ? 'تعديل حالة' : 'إضافة حالة جديدة'}</DialogTitle></DialogHeader>
-            <div className="space-y-3">
-              <div><Label>اسم الحالة</Label><Input value={name} onChange={e => setName(e.target.value)} className="bg-secondary border-border" /></div>
-              <div>
-                <Label>اللون</Label>
-                <div className="flex gap-2 items-center">
-                  <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-10 h-10 rounded cursor-pointer" />
-                  <Input value={color} onChange={e => setColor(e.target.value)} className="bg-secondary border-border flex-1" dir="ltr" />
-                  <div className="w-20"><Badge style={{ backgroundColor: color + '30', color }}>{name || 'معاينة'}</Badge></div>
-                </div>
-              </div>
-              <Button onClick={save} className="w-full">{editId ? 'تحديث' : 'إضافة'}</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
       <Card className="bg-card border-border">

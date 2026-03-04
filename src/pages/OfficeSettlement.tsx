@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Trash2 } from 'lucide-react';
 
 interface SettlementRow {
@@ -30,6 +32,43 @@ const newRow = (): SettlementRow => ({
 export default function OfficeSettlement() {
   const [rows, setRows] = useState<SettlementRow[]>([newRow()]);
   const [pickupRate, setPickupRate] = useState('');
+  const [offices, setOffices] = useState<any[]>([]);
+  const [selectedOffice, setSelectedOffice] = useState<string>('all');
+  const [officeOrders, setOfficeOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    supabase.from('offices').select('id, name').order('name').then(({ data }) => setOffices(data || []));
+  }, []);
+
+  useEffect(() => {
+    if (selectedOffice && selectedOffice !== 'all') {
+      supabase.from('orders').select('*, order_statuses(name, color)')
+        .eq('office_id', selectedOffice)
+        .eq('is_closed', false)
+        .order('created_at', { ascending: false })
+        .then(({ data }) => {
+          setOfficeOrders(data || []);
+          // Auto-fill rows from orders
+          if (data && data.length > 0) {
+            setRows(data.map(o => ({
+              id: o.id,
+              code: o.customer_code || '',
+              name: o.customer_name || '',
+              count: '1',
+              pieces: String(o.quantity || 1),
+              amount: String(Number(o.price) || 0),
+              shipping: String(Number(o.delivery_price) || 0),
+              arrived: '0',
+            })));
+          } else {
+            setRows([newRow()]);
+          }
+        });
+    } else {
+      setOfficeOrders([]);
+      setRows([newRow()]);
+    }
+  }, [selectedOffice]);
 
   const addRow = () => setRows(prev => [...prev, newRow()]);
 
@@ -56,9 +95,22 @@ export default function OfficeSettlement() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">تقفيلة المكاتب</h1>
-        <Button size="sm" onClick={addRow}>
-          <Plus className="h-4 w-4 ml-1" />إضافة صف
-        </Button>
+        <div className="flex gap-2 items-center">
+          <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+            <SelectTrigger className="w-[200px] bg-secondary border-border">
+              <SelectValue placeholder="اختر مكتب..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل المكاتب</SelectItem>
+              {offices.map(o => (
+                <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={addRow}>
+            <Plus className="h-4 w-4 ml-1" />إضافة صف
+          </Button>
+        </div>
       </div>
 
       <Card className="bg-card border-border">
