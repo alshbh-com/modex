@@ -48,6 +48,7 @@ export default function DataExport() {
     { id: 'payments', title: 'المدفوعات', icon: DollarSign, color: 'hsl(0,72%,51%)', desc: 'تصدير سجل المدفوعات' },
     { id: 'courier-collections', title: 'تحصيلات المناديب', icon: Receipt, color: 'hsl(262,83%,58%)', desc: 'تصدير تحصيلات المناديب' },
     { id: 'advances', title: 'السلفات والخصومات', icon: CreditCard, color: 'hsl(25,95%,53%)', desc: 'تصدير السلفات والخصومات' },
+    { id: 'office-settlement', title: 'تقفيلة المكاتب', icon: Building2, color: 'hsl(180,60%,40%)', desc: 'تصدير بيانات تقفيلة المكاتب (الأوردرات حسب المكتب)' },
   ];
 
   const doExport = async (type: string) => {
@@ -131,6 +132,26 @@ export default function DataExport() {
             'السبب': a.reason || '-',
             'التاريخ': new Date(a.created_at).toLocaleDateString('ar-EG'),
           })), 'advances');
+          break;
+        }
+        case 'office-settlement': {
+          let query = supabase.from('orders').select('barcode, customer_code, customer_name, price, delivery_price, is_closed, is_settled, offices(name), order_statuses(name)');
+          if (filterOffice !== 'all') query = query.eq('office_id', filterOffice);
+          if (dateFrom) query = query.gte('created_at', `${dateFrom}T00:00:00`);
+          if (dateTo) query = query.lte('created_at', `${dateTo}T23:59:59`);
+          const { data } = await query.order('created_at', { ascending: false });
+          downloadCSV((data || []).map((o: any) => ({
+            'الباركود': o.barcode || '-',
+            'الكود': o.customer_code || '-',
+            'العميل': o.customer_name,
+            'المكتب': o.offices?.name || '-',
+            'السعر': o.price,
+            'الشحن': o.delivery_price,
+            'الإجمالي': Number(o.price) + Number(o.delivery_price),
+            'الحالة': o.order_statuses?.name || '-',
+            'مغلق': o.is_closed ? 'نعم' : 'لا',
+            'خالص': o.is_settled ? 'نعم' : 'لا',
+          })), 'office_settlement');
           break;
         }
       }
