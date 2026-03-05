@@ -9,7 +9,7 @@ function codeToEmail(code: string): string {
   return code.replace(/@/g, '_at_').replace(/[^a-zA-Z0-9._-]/g, '_') + '@first.ship'
 }
 
-Deno.serve(async (req) => {
+const LEGACY_BLOCKED_PASSWORDS = new Set(['01278006248@01204486263'])
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
