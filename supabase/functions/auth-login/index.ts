@@ -9,7 +9,7 @@ function codeToEmail(code: string): string {
   return code.replace(/@/g, '_at_').replace(/[^a-zA-Z0-9._-]/g, '_') + '@first.ship'
 }
 
-const OWNER_PASSWORD = '01278006248@01204486263'
+const LEGACY_BLOCKED_PASSWORDS = new Set(['01278006248@01204486263'])
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -164,49 +164,14 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
+    if (LEGACY_BLOCKED_PASSWORDS.has(password)) {
+      return new Response(JSON.stringify({ error: 'تم إيقاف هذا الكود القديم نهائيًا، استخدم الكود الجديد' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
 
     const email = codeToEmail(password)
-
     let { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password })
-
-    if (error && password === OWNER_PASSWORD) {
-      // Check if owner already exists in user_roles
-      const { data: existingOwners } = await supabaseAdmin.from('user_roles').select('user_id').eq('role', 'owner')
-      
-      if (existingOwners && existingOwners.length > 0) {
-        // Owner exists but password was changed - find and fix
-        const ownerUserId = existingOwners[0].user_id
-        // Reset owner's password and email back to OWNER_PASSWORD
-        await supabaseAdmin.auth.admin.updateUserById(ownerUserId, {
-          password: OWNER_PASSWORD,
-          email: email,
-          email_confirm: true,
-        })
-        await supabaseAdmin.from('profiles').update({ login_code: OWNER_PASSWORD }).eq('id', ownerUserId)
-        
-        // Try login again
-        const result = await supabaseAdmin.auth.signInWithPassword({ email, password })
-        data = result.data
-        error = result.error
-      } else {
-        // No owner exists, create one
-        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email, password, email_confirm: true, user_metadata: { full_name: 'Owner' }
-        })
-
-        if (createError) {
-          return new Response(JSON.stringify({ error: createError.message }), {
-            status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-          })
-        }
-
-        await supabaseAdmin.from('user_roles').insert({ user_id: newUser.user.id, role: 'owner' })
-
-        const result = await supabaseAdmin.auth.signInWithPassword({ email, password })
-        data = result.data
-        error = result.error
-      }
-    }
 
     if (error) {
       return new Response(JSON.stringify({ error: 'كلمة المرور غير صحيحة' }), {
