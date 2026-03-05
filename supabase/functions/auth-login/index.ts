@@ -10,6 +10,8 @@ function codeToEmail(code: string): string {
 }
 
 const LEGACY_BLOCKED_PASSWORDS = new Set(['01278006248@01204486263'])
+
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
