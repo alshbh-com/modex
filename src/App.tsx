@@ -97,11 +97,13 @@ const App = () => (
               <Route path="/status-management" element={<StatusManagement />} />
               <Route path="/order-notes" element={<OrderNotes />} />
               <Route path="/data-export" element={<DataExport />} />
-              <Route path="/office-settlement" element={<OfficeSettlement />} />
-              <Route path="/diary-offices" element={<DiaryOffices />} />
-              <Route path="/diary-offices/:officeId" element={<OfficeDiaries />} />
-              <Route path="/diary-offices/:officeId/diary/:diaryId" element={<DiaryView />} />
-              <Route path="/accounting" element={<AccountingDashboard />} />
+              <Route path="/accounting-system" element={<AccountingLayout />}>
+                <Route index element={<DiaryOffices />} />
+                <Route path="offices/:officeId" element={<OfficeDiaries />} />
+                <Route path="offices/:officeId/diary/:diaryId" element={<DiaryView />} />
+                <Route path="dashboard" element={<AccountingDashboard />} />
+                <Route path="office-settlement" element={<OfficeSettlement />} />
+              </Route>
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
