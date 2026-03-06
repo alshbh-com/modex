@@ -37,9 +37,7 @@ const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
-  { title: 'تقفيلة المكاتب', url: '/office-settlement', icon: ClipboardList },
-  { title: 'اليوميات', url: '/diary-offices', icon: Calendar },
-  { title: 'الحسابات', url: '/accounting', icon: Calculator },
+  { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
 ];
 
 const reportsItems = [
