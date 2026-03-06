@@ -37,7 +37,6 @@ const accountingItems = [
   { title: 'تحصيلات المندوبين', url: '/courier-collections', icon: Wallet },
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
-  { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
 ];
 
 const reportsItems = [
@@ -55,6 +54,7 @@ const toolsItems = [
   { title: 'تصدير البيانات', url: '/data-export', icon: FileSpreadsheet },
   { title: 'سجل الحركات', url: '/logs', icon: ScrollText },
   { title: 'الإعدادات', url: '/settings', icon: Settings },
+  { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
 ];
 
 const groups = [
