@@ -38,6 +38,8 @@ const accountingItems = [
   { title: 'حسابات المكاتب', url: '/office-accounts', icon: Building },
   { title: 'السلفات والخصومات', url: '/advances', icon: DollarSign },
   { title: 'تقفيلة المكاتب', url: '/office-settlement', icon: ClipboardList },
+  { title: 'اليوميات', url: '/diary-offices', icon: Calendar },
+  { title: 'الحسابات', url: '/accounting', icon: Calculator },
 ];
 
 const reportsItems = [

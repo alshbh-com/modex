@@ -36,6 +36,10 @@ import OrderNotes from "@/pages/OrderNotes";
 import DataExport from "@/pages/DataExport";
 import OfficePortal from "@/pages/OfficePortal";
 import OfficeSettlement from "@/pages/OfficeSettlement";
+import DiaryOffices from "@/pages/DiaryOffices";
+import OfficeDiaries from "@/pages/OfficeDiaries";
+import DiaryView from "@/pages/DiaryView";
+import AccountingDashboard from "@/pages/AccountingDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -93,6 +97,10 @@ const App = () => (
               <Route path="/order-notes" element={<OrderNotes />} />
               <Route path="/data-export" element={<DataExport />} />
               <Route path="/office-settlement" element={<OfficeSettlement />} />
+              <Route path="/diary-offices" element={<DiaryOffices />} />
+              <Route path="/diary-offices/:officeId" element={<OfficeDiaries />} />
+              <Route path="/diary-offices/:officeId/diary/:diaryId" element={<DiaryView />} />
+              <Route path="/accounting" element={<AccountingDashboard />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

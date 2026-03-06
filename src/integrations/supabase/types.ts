@@ -251,6 +251,128 @@ export type Database = {
           },
         ]
       }
+      diaries: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          diary_date: string
+          diary_number: number
+          id: string
+          is_closed: boolean
+          lock_status_updates: boolean
+          office_id: string
+          prevent_new_orders: boolean
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          diary_date?: string
+          diary_number?: number
+          id?: string
+          is_closed?: boolean
+          lock_status_updates?: boolean
+          office_id: string
+          prevent_new_orders?: boolean
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          diary_date?: string
+          diary_number?: number
+          id?: string
+          is_closed?: boolean
+          lock_status_updates?: boolean
+          office_id?: string
+          prevent_new_orders?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diaries_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diary_orders: {
+        Row: {
+          created_at: string
+          diary_id: string
+          id: string
+          n_column: string | null
+          order_id: string
+          partial_amount: number | null
+          status_inside_diary: string
+        }
+        Insert: {
+          created_at?: string
+          diary_id: string
+          id?: string
+          n_column?: string | null
+          order_id: string
+          partial_amount?: number | null
+          status_inside_diary?: string
+        }
+        Update: {
+          created_at?: string
+          diary_id?: string
+          id?: string
+          n_column?: string | null
+          order_id?: string
+          partial_amount?: number | null
+          status_inside_diary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diary_orders_diary_id_fkey"
+            columns: ["diary_id"]
+            isOneToOne: false
+            referencedRelation: "diaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diary_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          expense_date: string
+          expense_name: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expense_date?: string
+          expense_name: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          expense_date?: string
+          expense_name?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: []
+      }
       office_payments: {
         Row: {
           amount: number
@@ -638,6 +760,7 @@ export type Database = {
     }
     Functions: {
       cleanup_old_activity_logs: { Args: never; Returns: undefined }
+      cleanup_old_diaries: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
