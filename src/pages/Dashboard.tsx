@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
+import { usePermissions, urlToSectionKey } from '@/hooks/usePermissions';
 import {
   Package, PackageSearch, Archive, Search, Building2, MapPin, Box,
   Truck, Wallet, Building, DollarSign, Printer, ScrollText, Settings, Users,
   BarChart3, UserCheck, TrendingUp, Calendar, Locate, MessageSquare, FileSpreadsheet,
-  CircleDot, Calculator, Contact, Clock, CheckCircle2, XCircle
+  CircleDot, Calculator, Contact, Clock, CheckCircle2, XCircle, FileBarChart, Trash2
 } from 'lucide-react';
 
 const sections = [
