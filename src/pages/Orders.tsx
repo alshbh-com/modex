@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import AddOrderDialog from '@/components/AddOrderDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
+import { moveToTrash } from '@/lib/trashUtils';
 
 export default function Orders() {
   const { isOwner } = useAuth();
