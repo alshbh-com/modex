@@ -172,7 +172,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
               <TableHead className="text-right">مرتجع</TableHead>
               <TableHead className="text-right">تسليم جزئي</TableHead>
               <TableHead className="text-right">فرق شحن</TableHead>
-              <TableHead className="text-right">تحويلة تسليم</TableHead>
+              <TableHead className="text-right">عمولة التسليم</TableHead>
               <TableHead className="text-right">رفض دون شحن</TableHead>
               <TableHead className="text-right">غرامة مرتجع</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
