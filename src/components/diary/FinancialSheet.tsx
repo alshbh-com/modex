@@ -5,7 +5,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
 import { Copy, Plus } from 'lucide-react';
@@ -61,9 +60,9 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
     onSuccess: () => qc.invalidateQueries({ queryKey: ['diary-orders', diary.id] }),
   });
 
-  const updateNotes = useMutation({
-    mutationFn: async ({ id, notes }: { id: string; notes: string }) => {
-      const { error } = await supabase.from('diary_orders').update({ notes }).eq('id', id);
+  const updateManualField = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: string; value: any }) => {
+      const { error } = await supabase.from('diary_orders').update({ [field]: value } as any).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['diary-orders', diary.id] }),
@@ -102,11 +101,18 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
     setPartialDialog(null);
   };
 
-  // Row calculation
+  // Row calculation - uses manual values if set, otherwise auto-calculated from status
   const calcRow = (dOrder: any) => {
     const price = dOrder.orders?.price || 0;
     const status = dOrder.status_inside_diary;
     const partial = dOrder.partial_amount || 0;
+    const manualPickup = Number((dOrder as any).manual_pickup) || 0;
+    const manualArrived = Number((dOrder as any).manual_arrived) || 0;
+    const manualShippingDiff = Number((dOrder as any).manual_shipping_diff) || 0;
+    const manualDeliveryCommission = Number((dOrder as any).manual_delivery_commission) || 0;
+    const manualRejectNoShip = Number((dOrder as any).manual_reject_no_ship) || 0;
+    const manualReturnPenalty = Number((dOrder as any).manual_return_penalty) || 0;
+    const manualReturnStatus = (dOrder as any).manual_return_status || '';
 
     return {
       price,
@@ -114,11 +120,13 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       postponed: status === 'مؤجل' ? price : 0,
       returned: status === 'تسليم جزئي' ? (price - partial) : (RETURN_STATUSES.includes(status) ? price : 0),
       partial: status === 'تسليم جزئي' ? partial : 0,
-      shippingDiff: status === 'فرق شحن' ? price : 0,
-      transferDelivery: status === 'عمولة التسليم' ? price : 0,
-      refuseNoShipping: status === 'رفض دون شحن' ? price : 0,
-      returnPenalty: status === 'غرامة مرتجع' ? price : 0,
-      returnStatus: RETURN_STATUSES.includes(status) || status === 'تسليم جزئي' ? status : '',
+      shippingDiff: manualShippingDiff || (status === 'فرق شحن' ? price : 0),
+      transferDelivery: manualDeliveryCommission || (status === 'عمولة التسليم' ? price : 0),
+      refuseNoShipping: manualRejectNoShip || (status === 'رفض دون شحن' ? price : 0),
+      returnPenalty: manualReturnPenalty || (status === 'غرامة مرتجع' ? price : 0),
+      pickup: manualPickup,
+      arrived: manualArrived,
+      returnStatus: manualReturnStatus || (RETURN_STATUSES.includes(status) || status === 'تسليم جزئي' ? status : ''),
     };
   };
 
@@ -147,9 +155,11 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       acc.transferDelivery += row.transferDelivery;
       acc.refuseNoShipping += row.refuseNoShipping;
       acc.returnPenalty += row.returnPenalty;
+      acc.pickup += row.pickup;
+      acc.arrived += row.arrived;
       return acc;
     },
-    { price: 0, executed: 0, postponed: 0, returned: 0, partial: 0, shippingDiff: 0, transferDelivery: 0, refuseNoShipping: 0, returnPenalty: 0 }
+    { price: 0, executed: 0, postponed: 0, returned: 0, partial: 0, shippingDiff: 0, transferDelivery: 0, refuseNoShipping: 0, returnPenalty: 0, pickup: 0, arrived: 0 }
   );
 
   return (
@@ -176,6 +186,8 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
               <TableHead className="text-right">نزول</TableHead>
               <TableHead className="text-right">مرتجع</TableHead>
               <TableHead className="text-right">تسليم جزئي</TableHead>
+              <TableHead className="text-right">بيك اب</TableHead>
+              <TableHead className="text-right">الواصل</TableHead>
               <TableHead className="text-right">فرق شحن</TableHead>
               <TableHead className="text-right">عمولة التسليم</TableHead>
               <TableHead className="text-right">رفض دون شحن</TableHead>
@@ -188,7 +200,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
           <TableBody>
             {filteredOrders.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={16} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={18} className="text-center py-8 text-muted-foreground">
                   لا توجد أوردرات في هذه اليومية
                 </TableCell>
               </TableRow>
@@ -215,10 +227,72 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                     <TableCell className="text-sm text-yellow-600 font-medium">{row.postponed || ''}</TableCell>
                     <TableCell className="text-sm text-red-600 font-medium">{row.returned || ''}</TableCell>
                     <TableCell className="text-sm text-blue-600 font-medium">{row.partial || ''}</TableCell>
-                    <TableCell className="text-sm text-orange-600">{row.shippingDiff || ''}</TableCell>
-                    <TableCell className="text-sm text-purple-600">{row.transferDelivery || ''}</TableCell>
-                    <TableCell className="text-sm text-gray-600">{row.refuseNoShipping || ''}</TableCell>
-                    <TableCell className="text-sm text-pink-600">{row.returnPenalty || ''}</TableCell>
+                    {/* Manual: pickup */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-16 h-7 text-xs p-1"
+                        value={(dOrder as any).manual_pickup || ''}
+                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_pickup', value: parseFloat(e.target.value) || 0 })}
+                        disabled={diary.lock_status_updates}
+                        placeholder="0"
+                      />
+                    </TableCell>
+                    {/* Manual: arrived */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-16 h-7 text-xs p-1"
+                        value={(dOrder as any).manual_arrived || ''}
+                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_arrived', value: parseFloat(e.target.value) || 0 })}
+                        disabled={diary.lock_status_updates}
+                        placeholder="0"
+                      />
+                    </TableCell>
+                    {/* Manual: shipping diff */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-16 h-7 text-xs p-1"
+                        value={(dOrder as any).manual_shipping_diff || ''}
+                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_shipping_diff', value: parseFloat(e.target.value) || 0 })}
+                        disabled={diary.lock_status_updates}
+                        placeholder="0"
+                      />
+                    </TableCell>
+                    {/* Manual: delivery commission */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-16 h-7 text-xs p-1"
+                        value={(dOrder as any).manual_delivery_commission || ''}
+                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_delivery_commission', value: parseFloat(e.target.value) || 0 })}
+                        disabled={diary.lock_status_updates}
+                        placeholder="0"
+                      />
+                    </TableCell>
+                    {/* Manual: reject no ship */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-16 h-7 text-xs p-1"
+                        value={(dOrder as any).manual_reject_no_ship || ''}
+                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_reject_no_ship', value: parseFloat(e.target.value) || 0 })}
+                        disabled={diary.lock_status_updates}
+                        placeholder="0"
+                      />
+                    </TableCell>
+                    {/* Manual: return penalty */}
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-16 h-7 text-xs p-1"
+                        value={(dOrder as any).manual_return_penalty || ''}
+                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_return_penalty', value: parseFloat(e.target.value) || 0 })}
+                        disabled={diary.lock_status_updates}
+                        placeholder="0"
+                      />
+                    </TableCell>
                     <TableCell>
                       <Select
                         value={dOrder.status_inside_diary}
@@ -235,7 +309,16 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{row.returnStatus}</TableCell>
+                    {/* Manual return status */}
+                    <TableCell>
+                      <Input
+                        className="w-20 h-7 text-xs p-1"
+                        value={(dOrder as any).manual_return_status || row.returnStatus || ''}
+                        onChange={(e) => updateManualField.mutate({ id: dOrder.id, field: 'manual_return_status', value: e.target.value })}
+                        disabled={diary.lock_status_updates}
+                        placeholder="-"
+                      />
+                    </TableCell>
                     <TableCell>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCopyOrder(dOrder.order_id)}>
                         <Copy className="h-3 w-3" />
@@ -255,6 +338,8 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                 <TableCell className="text-yellow-600">{totals.postponed}</TableCell>
                 <TableCell className="text-red-600">{totals.returned}</TableCell>
                 <TableCell className="text-blue-600">{totals.partial}</TableCell>
+                <TableCell>{totals.pickup}</TableCell>
+                <TableCell>{totals.arrived}</TableCell>
                 <TableCell className="text-orange-600">{totals.shippingDiff}</TableCell>
                 <TableCell className="text-purple-600">{totals.transferDelivery}</TableCell>
                 <TableCell className="text-gray-600">{totals.refuseNoShipping}</TableCell>

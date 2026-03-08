@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
-import { Plus, Lock, Unlock, Trash2, ArrowRight, Calendar, FileText, Archive, Search } from 'lucide-react';
+import { Plus, Lock, Unlock, Trash2, ArrowRight, Calendar, FileText, Archive } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function OfficeDiaries() {
@@ -44,9 +44,8 @@ export default function OfficeDiaries() {
     enabled: !!officeId,
   });
 
-  // Diary orders count per diary
   const { data: orderCounts = {} } = useQuery({
-    queryKey: ['diary-order-counts', officeId],
+    queryKey: ['diary-order-counts', officeId, diaries.map((d: any) => d.id).join(',')],
     queryFn: async () => {
       const diaryIds = diaries.map((d: any) => d.id);
       if (diaryIds.length === 0) return {};
@@ -108,7 +107,6 @@ export default function OfficeDiaries() {
     },
   });
 
-  // Filter diaries
   const filterDiaries = (list: any[]) => {
     return list.filter((d: any) => {
       if (dateFilter && d.diary_date !== dateFilter) return false;
@@ -118,6 +116,7 @@ export default function OfficeDiaries() {
     });
   };
 
+  const allFiltered = filterDiaries(diaries);
   const openDiaries = filterDiaries(diaries.filter((d: any) => !d.is_closed && !d.is_archived));
   const closedDiaries = filterDiaries(diaries.filter((d: any) => d.is_closed && !d.is_archived));
   const archivedDiaries = filterDiaries(diaries.filter((d: any) => d.is_archived));
@@ -178,7 +177,7 @@ export default function OfficeDiaries() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">يوميات {office?.name || '...'}</h1>
-            <p className="text-muted-foreground text-sm">إدارة اليوميات اليومية للمكتب</p>
+            <p className="text-muted-foreground text-sm">إجمالي اليوميات: {diaries.length} (مفتوحة: {openDiaries.length} | مقفولة: {closedDiaries.length})</p>
           </div>
         </div>
         <Button onClick={() => createDiary.mutate()} disabled={createDiary.isPending}>
@@ -187,14 +186,12 @@ export default function OfficeDiaries() {
         </Button>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <Input
           type="date"
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
           className="w-44"
-          placeholder="فلتر بالتاريخ"
         />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
@@ -213,12 +210,18 @@ export default function OfficeDiaries() {
         )}
       </div>
 
-      <Tabs defaultValue="open" dir="rtl">
+      <Tabs defaultValue="all" dir="rtl">
         <TabsList>
+          <TabsTrigger value="all">الكل ({allFiltered.length})</TabsTrigger>
           <TabsTrigger value="open">المفتوحة ({openDiaries.length})</TabsTrigger>
           <TabsTrigger value="closed">المقفولة ({closedDiaries.length})</TabsTrigger>
           <TabsTrigger value="archived">المؤرشفة ({archivedDiaries.length})</TabsTrigger>
         </TabsList>
+        <TabsContent value="all" className="space-y-3 mt-4">
+          {allFiltered.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">لا توجد يوميات</p>
+          ) : allFiltered.map(renderDiaryCard)}
+        </TabsContent>
         <TabsContent value="open" className="space-y-3 mt-4">
           {openDiaries.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">لا توجد يوميات مفتوحة</p>
