@@ -54,6 +54,7 @@ const toolsItems = [
   { title: 'ملاحظات الأوردرات', url: '/order-notes', icon: MessageSquare },
   { title: 'تصدير البيانات', url: '/data-export', icon: FileSpreadsheet },
   { title: 'سجل الحركات', url: '/logs', icon: ScrollText },
+  { title: 'سلة المحذوفات', url: '/trash', icon: Trash2 },
   { title: 'الإعدادات', url: '/settings', icon: Settings },
   { title: 'سيستم الحسابات', url: '/accounting-system', icon: Calculator },
 ];
