@@ -74,6 +74,7 @@ export default function PrintSticker() {
           <div class="info">المكتب: <b>${order.offices?.name || '-'}</b></div>
           <div class="info">هاتف: <b dir="ltr">${order.customer_phone}</b></div>
           <div class="info">العنوان: <b>${order.address || '-'}</b></div>
+          <div class="info">قطع: <b>${order.quantity || 1}</b> ${order.size ? `| مقاس: <b>${order.size}</b>` : ''} ${order.color ? `| لون: <b>${order.color}</b>` : ''}</div>
           <div class="total">${total} ج.م</div>
         </div>`;
     }).join('');
