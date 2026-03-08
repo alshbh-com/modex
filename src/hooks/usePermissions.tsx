@@ -39,6 +39,8 @@ export const ALL_SECTIONS = [
   { key: 'order-notes', label: 'ملاحظات الأوردرات', url: '/order-notes' },
   { key: 'data-export', label: 'تصدير البيانات', url: '/data-export' },
   { key: 'logs', label: 'سجل الحركات', url: '/logs' },
+  { key: 'trash', label: 'سلة المحذوفات', url: '/trash' },
+  { key: 'office-report', label: 'تقرير المكاتب', url: '/office-report' },
   { key: 'settings', label: 'الإعدادات', url: '/settings' },
   { key: 'accounting-system', label: 'سيستم الحسابات', url: '/accounting-system' },
 ];
