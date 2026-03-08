@@ -118,10 +118,13 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
   // Totals
   const totalAmount = filtered.reduce((s: number, d: any) => s + (d.orders?.price || 0) + (d.orders?.delivery_price || 0), 0);
   const totalShipping = filtered.reduce((s: number, d: any) => s + (d.orders?.delivery_price || 0), 0);
+  const totalPickup = filtered.reduce((s: number, d: any) => s + (Number(d.orders?.shipping_paid) || 0), 0);
   const totalDelivered = filtered.filter((d: any) => d.status_inside_diary === 'تم التسليم')
     .reduce((s: number, d: any) => s + (d.orders?.price || 0) + (d.orders?.delivery_price || 0), 0);
   const totalPartialDelivered = filtered.filter((d: any) => d.status_inside_diary === 'تسليم جزئي')
     .reduce((s: number, d: any) => s + (d.partial_amount || 0) + (d.orders?.delivery_price || 0), 0);
+  const totalArrived = totalDelivered + totalPartialDelivered;
+  const totalDue = totalAmount - (totalShipping + totalArrived + totalPickup);
 
   return (
     <>
