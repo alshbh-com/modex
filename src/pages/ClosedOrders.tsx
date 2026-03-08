@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Trash2, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { moveToTrash } from '@/lib/trashUtils';
 
 export default function ClosedOrders() {
   const { isOwner } = useAuth();
