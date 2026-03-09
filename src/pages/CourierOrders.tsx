@@ -32,7 +32,7 @@ export default function CourierOrders() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [chatMsg, setChatMsg] = useState('');
   const [chatSending, setChatSending] = useState(false);
-  const chatScrollRef = React.useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // GPS tracking - mandatory, auto-prompt
   useCourierLocation(user?.id);
