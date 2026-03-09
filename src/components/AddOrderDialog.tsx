@@ -32,6 +32,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     quantity: '', price: '', delivery_price: '',
     office_id: '', status_id: '',
     color: '', size: '', address: '', notes: '',
+    priority: 'normal',
   };
 
   const [form, setForm] = useState(emptyForm);
