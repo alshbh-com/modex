@@ -156,7 +156,7 @@ export default function DiaryView() {
           </Button>
 
           {/* Export */}
-          <Button size="sm" variant="outline" onClick={() => exportDiaryToPDF(diary, diaryOrders, office?.name || '')}>
+          <Button size="sm" variant="outline" onClick={() => exportDiaryToPDF(diary, diaryOrders, office?.name || '', activeSheet)}>
             <Download className="h-4 w-4 ml-1" /> PDF
           </Button>
           <Button size="sm" variant="outline" onClick={() => exportDiaryToExcel(diary, diaryOrders, office?.name || '')}>
