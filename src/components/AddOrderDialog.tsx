@@ -19,6 +19,7 @@ interface Props {
 export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Props) {
   const [open, setOpen] = useState(!!editOrder);
   const [loading, setLoading] = useState(false);
+  const [dropdownsLoaded, setDropdownsLoaded] = useState(false);
 
   const [offices, setOffices] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -53,13 +54,21 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
 
   useEffect(() => {
     if (!editOrder) return;
-
     setOpen(true);
-    setForm(mapOrderToForm(editOrder));
-    loadDropdowns(editOrder);
+    setDropdownsLoaded(false);
+    
+    // Load dropdowns FIRST, then set form values
+    loadDropdowns(editOrder).then(() => {
+      setForm(mapOrderToForm(editOrder));
+      setDropdownsLoaded(true);
+    });
   }, [editOrder]);
 
-  useEffect(() => { if (open && !editOrder) loadDropdowns(); }, [open]);
+  useEffect(() => {
+    if (open && !editOrder) {
+      loadDropdowns().then(() => setDropdownsLoaded(true));
+    }
+  }, [open]);
 
   const loadDropdowns = async (orderForEdit?: any) => {
     const [o, p, s] = await Promise.all([
@@ -70,9 +79,9 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
 
     const loadedOffices = o.data || [];
     const currentOfficeId = orderForEdit?.office_id;
-    const hasCurrentOffice = !!currentOfficeId && loadedOffices.some((office) => office.id === currentOfficeId);
 
-    if (currentOfficeId && !hasCurrentOffice) {
+    // Ensure the current office is always in the list
+    if (currentOfficeId && !loadedOffices.some((office: any) => office.id === currentOfficeId)) {
       loadedOffices.unshift({
         id: currentOfficeId,
         name: orderForEdit?.offices?.name || 'المكتب الحالي',
