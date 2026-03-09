@@ -26,21 +26,36 @@ export default function CourierOrders() {
   const [partialDialog, setPartialDialog] = useState<any | null>(null);
   const [partialAmount, setPartialAmount] = useState('');
   const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
+  const [showChat, setShowChat] = useState(false);
+  const [chatContacts, setChatContacts] = useState<any[]>([]);
+  const [chatTarget, setChatTarget] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMsg, setChatMsg] = useState('');
+  const [chatSending, setChatSending] = useState(false);
+  const chatScrollRef = React.useRef<HTMLDivElement>(null);
 
-  // GPS tracking - mandatory
+  // GPS tracking - mandatory, auto-prompt
   useCourierLocation(user?.id);
 
-  useEffect(() => {
-    // Check location permission
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        () => setLocationGranted(true),
-        () => setLocationGranted(false),
-        { timeout: 5000 }
-      );
-    } else {
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
       setLocationGranted(false);
+      return;
     }
+    navigator.geolocation.getCurrentPosition(
+      () => setLocationGranted(true),
+      (err) => {
+        console.error('GPS denied:', err);
+        setLocationGranted(false);
+        // Re-prompt after 3 seconds
+        setTimeout(requestLocation, 3000);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  useEffect(() => {
+    requestLocation();
   }, []);
 
   useEffect(() => {
