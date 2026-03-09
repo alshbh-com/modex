@@ -32,6 +32,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     quantity: '', price: '', delivery_price: '',
     office_id: '', status_id: '',
     color: '', size: '', address: '', notes: '',
+    priority: 'normal',
   };
 
   const [form, setForm] = useState(emptyForm);
@@ -51,6 +52,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
     size: order?.size || '',
     address: order?.address || '',
     notes: order?.notes || '',
+    priority: order?.priority || 'normal',
   });
 
   useEffect(() => {
@@ -143,6 +145,7 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
         color: form.color, size: form.size,
         address: form.address,
         notes: form.notes || '',
+        priority: form.priority || 'normal',
       };
       orderData.office_id = form.office_id;
       if (form.product_id) orderData.product_id = form.product_id;
@@ -268,12 +271,23 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
             <span className="text-lg font-bold">{totalCollection} ج.م</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>الحالة</Label>
               <Select value={form.status_id} onValueChange={v => set('status_id', v)}>
                 <SelectTrigger className="bg-secondary border-border"><SelectValue placeholder="اختر حالة" /></SelectTrigger>
                 <SelectContent>{statuses.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>الأولوية</Label>
+              <Select value={form.priority} onValueChange={v => set('priority', v)}>
+                <SelectTrigger className="bg-secondary border-border"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">عادي</SelectItem>
+                  <SelectItem value="urgent">🔴 عاجل</SelectItem>
+                  <SelectItem value="vip">⭐ VIP</SelectItem>
+                </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">

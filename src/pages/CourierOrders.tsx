@@ -7,9 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Eye, Phone, MessageSquare, Send } from 'lucide-react';
+import { LogOut, Eye, Phone, MessageSquare, Send, MapPin, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
+import { useCourierLocation } from '@/hooks/useCourierLocation';
+import { Badge } from '@/components/ui/badge';
 
 export default function CourierOrders() {
   const { user, logout } = useAuth();
@@ -23,6 +25,23 @@ export default function CourierOrders() {
   const [shippingAmount, setShippingAmount] = useState('');
   const [partialDialog, setPartialDialog] = useState<any | null>(null);
   const [partialAmount, setPartialAmount] = useState('');
+  const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
+
+  // GPS tracking - mandatory
+  useCourierLocation(user?.id);
+
+  useEffect(() => {
+    // Check location permission
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => setLocationGranted(true),
+        () => setLocationGranted(false),
+        { timeout: 5000 }
+      );
+    } else {
+      setLocationGranted(false);
+    }
+  }, []);
 
   useEffect(() => {
     load();
@@ -176,10 +195,29 @@ export default function CourierOrders() {
       <div className="mx-auto max-w-4xl space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-xl sm:text-2xl font-bold">أوردراتي</h1>
-          <Button variant="ghost" className="text-destructive" onClick={logout}>
-            <LogOut className="h-4 w-4 ml-2" />خروج
-          </Button>
+          <div className="flex items-center gap-2">
+            {locationGranted === true && (
+              <Badge variant="default" className="text-xs gap-1">
+                <MapPin className="h-3 w-3" /> الموقع مفعّل
+              </Badge>
+            )}
+            <Button variant="ghost" className="text-destructive" onClick={logout}>
+              <LogOut className="h-4 w-4 ml-2" />خروج
+            </Button>
+          </div>
         </div>
+
+        {locationGranted === false && (
+          <Card className="border-destructive bg-destructive/10">
+            <CardContent className="p-3 flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+              <div>
+                <p className="font-bold text-sm text-destructive">تفعيل الموقع مطلوب!</p>
+                <p className="text-xs text-muted-foreground">يجب تفعيل خدمة الموقع (GPS) حتى تتمكن من استلام الأوردرات. اسمح بالوصول للموقع من إعدادات المتصفح.</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="bg-card border-border">
           <CardContent className="p-3 flex justify-between items-center">
@@ -215,7 +253,11 @@ export default function CourierOrders() {
                           {idx < orders.length - 1 && <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => moveOrder(idx, 1)}>↓</Button>}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {order.customer_code || '-'}
+                        {order.priority === 'urgent' && <Badge variant="destructive" className="mr-1 text-xs">عاجل</Badge>}
+                        {order.priority === 'vip' && <Badge className="mr-1 text-xs bg-amber-500">VIP</Badge>}
+                      </TableCell>
                       <TableCell className="text-sm">{order.customer_name}</TableCell>
                       <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
                       <TableCell className="text-sm">{order.product_name}</TableCell>

@@ -53,6 +53,7 @@ const toolsItems = [
   { title: 'تتبع الشحنات', url: '/tracking', icon: Locate },
   { title: 'الطباعة', url: '/print', icon: Printer },
   { title: 'ملاحظات الأوردرات', url: '/order-notes', icon: MessageSquare },
+  { title: 'التواصل الداخلي', url: '/chat', icon: MessageSquare },
   { title: 'تصدير البيانات', url: '/data-export', icon: FileSpreadsheet },
   { title: 'سجل الحركات', url: '/logs', icon: ScrollText },
   { title: 'سلة المحذوفات', url: '/trash', icon: Trash2 },

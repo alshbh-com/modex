@@ -251,6 +251,33 @@ export type Database = {
           },
         ]
       }
+      courier_locations: {
+        Row: {
+          accuracy: number | null
+          courier_id: string
+          id: string
+          latitude: number
+          longitude: number
+          updated_at: string
+        }
+        Insert: {
+          accuracy?: number | null
+          courier_id: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string
+        }
+        Update: {
+          accuracy?: number | null
+          courier_id?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           created_at: string
@@ -511,6 +538,33 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       office_payments: {
         Row: {
           amount: number
@@ -669,6 +723,7 @@ export type Database = {
           office_id: string | null
           partial_amount: number | null
           price: number
+          priority: string
           product_id: string | null
           product_name: string
           quantity: number
@@ -699,6 +754,7 @@ export type Database = {
           office_id?: string | null
           partial_amount?: number | null
           price?: number
+          priority?: string
           product_id?: string | null
           product_name?: string
           quantity?: number
@@ -729,6 +785,7 @@ export type Database = {
           office_id?: string | null
           partial_amount?: number | null
           price?: number
+          priority?: string
           product_id?: string | null
           product_name?: string
           quantity?: number
