@@ -20,6 +20,7 @@ export default function DiaryView() {
   const qc = useQueryClient();
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [activeSheet, setActiveSheet] = useState<'financial' | 'orange'>('financial');
 
   const { data: diary, isLoading: diaryLoading } = useQuery({
     queryKey: ['diary', diaryId],

@@ -37,7 +37,12 @@ function calcOrangeRow(dOrder: any) {
   return { total, shipping, pickup, arrived, status: dOrder.status_inside_diary };
 }
 
-export function exportDiaryToPDF(diary: any, diaryOrders: any[], officeName: string) {
+export function exportDiaryToPDF(
+  diary: any,
+  diaryOrders: any[],
+  officeName: string,
+  sheet: 'financial' | 'orange' | 'both' = 'both'
+) {
   const w = window.open('', '_blank');
   if (!w) return;
 
@@ -51,14 +56,12 @@ export function exportDiaryToPDF(diary: any, diaryOrders: any[], officeName: str
     };
   }, { price: 0, executed: 0, postponed: 0, returned: 0, partial: 0, shippingDiff: 0, transferDelivery: 0, refuseNoShipping: 0, returnPenalty: 0, pickup: 0 });
 
-  // Orange sheet totals
   const orangeTotals = diaryOrders.reduce((acc: any, d: any) => {
     const r = calcOrangeRow(d);
     return { total: acc.total + r.total, shipping: acc.shipping + r.shipping, pickup: acc.pickup + r.pickup, arrived: acc.arrived + r.arrived };
   }, { total: 0, shipping: 0, pickup: 0, arrived: 0 });
   const orangeDue = orangeTotals.total - (orangeTotals.shipping + orangeTotals.arrived + orangeTotals.pickup);
 
-  // Financial summary
   const cashEntries: number[] = Array.isArray((diary as any).cash_arrived_entries) ? (diary as any).cash_arrived_entries.map(Number).filter((n: number) => !isNaN(n)) : [];
   const totalCash = cashEntries.reduce((s: number, v: number) => s + v, 0);
   const balanceNum = Number((diary as any).balance) || 0;
@@ -93,6 +96,62 @@ export function exportDiaryToPDF(diary: any, diaryOrders: any[], officeName: str
     </tr>`;
   }).join('');
 
+  const printFinancial = sheet === 'financial' || sheet === 'both';
+  const printOrange = sheet === 'orange' || sheet === 'both';
+
+  const financialSection = printFinancial ? `
+    <div class="section-title">📊 الشيت المالي</div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>الاسم</th><th>ن</th><th>الكود</th><th>السعر</th>
+        <th>منفذ</th><th>نزول</th><th>مرتجع</th><th>تسليم جزئي</th><th>بيك اب</th>
+        <th>فرق شحن</th><th>عمولة التسليم</th><th>رفض دون شحن</th><th>غرامة مرتجع</th>
+        <th>الحالة</th><th>حالة المرتجع</th>
+      </tr></thead>
+      <tbody>${financialRows}
+        <tr class="total-row">
+          <td colspan="4">الإجمالي</td>
+          <td>${totals.price}</td><td>${totals.executed}</td><td>${totals.postponed}</td>
+          <td>${totals.returned}</td><td>${totals.partial}</td><td>${totals.pickup}</td>
+          <td>${totals.shippingDiff}</td><td>${totals.transferDelivery}</td>
+          <td>${totals.refuseNoShipping}</td><td>${totals.returnPenalty}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="summary">
+      <div><strong>الملخص المالي:</strong></div>
+      <div>الواصل نقدي: ${totalCash} | الرصيد: ${balanceNum} | مستحق سابق: ${previousDueNum}</div>
+      <div>فرق اليومية = ${totals.price} - ${totalCash} = <strong>${diaryDiff}</strong></div>
+      <div>المستحق = (${diaryDiff} + ${previousDueNum}) - (${balanceNum} + ${totals.returned} + ${totals.shippingDiff} + ${totals.transferDelivery} + ${totals.refuseNoShipping} + ${totals.returnPenalty}) = <strong>${finalDue}</strong></div>
+    </div>
+  ` : '';
+
+  const orangeSection = printOrange ? `
+    ${printFinancial ? '<div class="page-break"></div>' : ''}
+    <div class="header">FIRST - ${officeName}</div>
+    <div class="section-title">📋 الشيت البرتقالي</div>
+    <table>
+      <thead><tr>
+        <th>#</th><th>الباركود</th><th>الاسم</th><th>العنوان</th><th>القطع</th>
+        <th>الإجمالي</th><th>الشحن</th><th>بيك اب</th><th>الواصل</th>
+        <th>الحالة</th><th>حالة المرتجع</th>
+      </tr></thead>
+      <tbody>${orangeRows}
+        <tr class="total-row">
+          <td colspan="5">الإجمالي</td>
+          <td>${orangeTotals.total}</td><td>${orangeTotals.shipping}</td>
+          <td>${orangeTotals.pickup}</td><td>${orangeTotals.arrived}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="summary">
+      <div><strong>حساب المستحق:</strong></div>
+      <div>المستحق = ${orangeTotals.total} - (${orangeTotals.shipping} + ${orangeTotals.arrived} + ${orangeTotals.pickup}) = <strong>${orangeDue}</strong></div>
+    </div>
+  ` : '';
+
   w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">
 <title>${officeName} - يومية ${diary.diary_number}</title>
 <style>
@@ -111,55 +170,8 @@ export function exportDiaryToPDF(diary: any, diaryOrders: any[], officeName: str
 </style></head><body>
   <div class="header">FIRST - ${officeName}</div>
   <div class="sub">يومية رقم ${diary.diary_number} | ${format(new Date(diary.diary_date), 'dd/MM/yyyy')} | ${diary.is_closed ? 'مقفولة' : 'مفتوحة'} | ${diaryOrders.length} أوردر</div>
-  
-  <div class="section-title">📊 الشيت المالي</div>
-  <table>
-    <thead><tr>
-      <th>#</th><th>الاسم</th><th>ن</th><th>الكود</th><th>السعر</th>
-      <th>منفذ</th><th>نزول</th><th>مرتجع</th><th>تسليم جزئي</th><th>بيك اب</th>
-      <th>فرق شحن</th><th>عمولة التسليم</th><th>رفض دون شحن</th><th>غرامة مرتجع</th>
-      <th>الحالة</th><th>حالة المرتجع</th>
-    </tr></thead>
-    <tbody>${financialRows}
-      <tr class="total-row">
-        <td colspan="4">الإجمالي</td>
-        <td>${totals.price}</td><td>${totals.executed}</td><td>${totals.postponed}</td>
-        <td>${totals.returned}</td><td>${totals.partial}</td><td>${totals.pickup}</td>
-        <td>${totals.shippingDiff}</td><td>${totals.transferDelivery}</td>
-        <td>${totals.refuseNoShipping}</td><td>${totals.returnPenalty}</td>
-        <td colspan="2"></td>
-      </tr>
-    </tbody>
-  </table>
-  <div class="summary">
-    <div><strong>الملخص المالي:</strong></div>
-    <div>الواصل نقدي: ${totalCash} | الرصيد: ${balanceNum} | مستحق سابق: ${previousDueNum}</div>
-    <div>فرق اليومية = ${totals.price} - ${totalCash} = <strong>${diaryDiff}</strong></div>
-    <div>المستحق = (${diaryDiff} + ${previousDueNum}) - (${balanceNum} + ${totals.returned} + ${totals.shippingDiff} + ${totals.transferDelivery} + ${totals.refuseNoShipping} + ${totals.returnPenalty}) = <strong>${finalDue}</strong></div>
-  </div>
-
-  <div class="page-break"></div>
-  <div class="header">FIRST - ${officeName}</div>
-  <div class="section-title">📋 الشيت البرتقالي</div>
-  <table>
-    <thead><tr>
-      <th>#</th><th>الباركود</th><th>الاسم</th><th>العنوان</th><th>القطع</th>
-      <th>الإجمالي</th><th>الشحن</th><th>بيك اب</th><th>الواصل</th>
-      <th>الحالة</th><th>حالة المرتجع</th>
-    </tr></thead>
-    <tbody>${orangeRows}
-      <tr class="total-row">
-        <td colspan="5">الإجمالي</td>
-        <td>${orangeTotals.total}</td><td>${orangeTotals.shipping}</td>
-        <td>${orangeTotals.pickup}</td><td>${orangeTotals.arrived}</td>
-        <td colspan="2"></td>
-      </tr>
-    </tbody>
-  </table>
-  <div class="summary">
-    <div><strong>حساب المستحق:</strong></div>
-    <div>المستحق = ${orangeTotals.total} - (${orangeTotals.shipping} + ${orangeTotals.arrived} + ${orangeTotals.pickup}) = <strong>${orangeDue}</strong></div>
-  </div>
+  ${financialSection}
+  ${orangeSection}
 </body></html>`);
   w.document.close();
   w.focus();

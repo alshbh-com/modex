@@ -34,39 +34,52 @@ export default function AddOrderDialog({ onOrderAdded, editOrder, onClose }: Pro
 
   const [form, setForm] = useState(emptyForm);
 
+  const mapOrderToForm = (order: any) => ({
+    customer_name: order?.customer_name || '',
+    customer_phone: order?.customer_phone || '',
+    customer_code: order?.customer_code || '',
+    product_name: order?.product_name || '',
+    product_id: order?.product_id || '',
+    quantity: String(order?.quantity || 1),
+    price: String(order?.price || 0),
+    delivery_price: String(order?.delivery_price || 0),
+    office_id: order?.office_id || '',
+    status_id: order?.status_id || '',
+    color: order?.color || '',
+    size: order?.size || '',
+    address: order?.address || '',
+    notes: order?.notes || '',
+  });
+
   useEffect(() => {
-    if (editOrder) {
-      setOpen(true);
-      loadDropdowns().then(() => {
-        setForm({
-          customer_name: editOrder.customer_name || '',
-          customer_phone: editOrder.customer_phone || '',
-          customer_code: editOrder.customer_code || '',
-          product_name: editOrder.product_name || '',
-          product_id: editOrder.product_id || '',
-          quantity: String(editOrder.quantity || 1),
-          price: String(editOrder.price || 0),
-          delivery_price: String(editOrder.delivery_price || 0),
-          office_id: editOrder.office_id || '',
-          status_id: editOrder.status_id || '',
-          color: editOrder.color || '',
-          size: editOrder.size || '',
-          address: editOrder.address || '',
-          notes: editOrder.notes || '',
-        });
-      });
-    }
+    if (!editOrder) return;
+
+    setOpen(true);
+    setForm(mapOrderToForm(editOrder));
+    loadDropdowns(editOrder);
   }, [editOrder]);
 
   useEffect(() => { if (open && !editOrder) loadDropdowns(); }, [open]);
 
-  const loadDropdowns = async () => {
+  const loadDropdowns = async (orderForEdit?: any) => {
     const [o, p, s] = await Promise.all([
       supabase.from('offices').select('id, name').order('name'),
       supabase.from('products').select('id, name, quantity').order('name'),
       supabase.from('order_statuses').select('id, name').order('sort_order'),
     ]);
-    setOffices(o.data || []);
+
+    const loadedOffices = o.data || [];
+    const currentOfficeId = orderForEdit?.office_id;
+    const hasCurrentOffice = !!currentOfficeId && loadedOffices.some((office) => office.id === currentOfficeId);
+
+    if (currentOfficeId && !hasCurrentOffice) {
+      loadedOffices.unshift({
+        id: currentOfficeId,
+        name: orderForEdit?.offices?.name || 'المكتب الحالي',
+      });
+    }
+
+    setOffices(loadedOffices);
     setProducts(p.data || []);
     setStatuses(s.data || []);
   };
