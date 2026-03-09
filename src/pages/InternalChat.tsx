@@ -158,7 +158,7 @@ export default function InternalChat() {
     }).select().single();
 
     if (!error && data) {
-      setMessages(prev => [...prev, data as Message]);
+      setMessages(prev => [...prev, data as any as Message]);
       setNewMessage('');
       loadContacts();
     }
