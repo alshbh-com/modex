@@ -25,6 +25,23 @@ export default function CourierOrders() {
   const [shippingAmount, setShippingAmount] = useState('');
   const [partialDialog, setPartialDialog] = useState<any | null>(null);
   const [partialAmount, setPartialAmount] = useState('');
+  const [locationGranted, setLocationGranted] = useState<boolean | null>(null);
+
+  // GPS tracking - mandatory
+  useCourierLocation(user?.id);
+
+  useEffect(() => {
+    // Check location permission
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        () => setLocationGranted(true),
+        () => setLocationGranted(false),
+        { timeout: 5000 }
+      );
+    } else {
+      setLocationGranted(false);
+    }
+  }, []);
 
   useEffect(() => {
     load();
