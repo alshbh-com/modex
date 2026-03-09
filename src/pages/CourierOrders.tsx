@@ -226,10 +226,13 @@ export default function CourierOrders() {
           <Card className="border-destructive bg-destructive/10">
             <CardContent className="p-3 flex items-center gap-3">
               <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
-              <div>
+              <div className="flex-1">
                 <p className="font-bold text-sm text-destructive">تفعيل الموقع مطلوب!</p>
-                <p className="text-xs text-muted-foreground">يجب تفعيل خدمة الموقع (GPS) حتى تتمكن من استلام الأوردرات. اسمح بالوصول للموقع من إعدادات المتصفح.</p>
+                <p className="text-xs text-muted-foreground">اضغط "سماح" في نافذة المتصفح لتفعيل الموقع. لن تتمكن من العمل بدون تفعيل GPS.</p>
               </div>
+              <Button size="sm" variant="destructive" onClick={requestLocation} className="shrink-0">
+                <MapPin className="h-3 w-3 ml-1" />إعادة المحاولة
+              </Button>
             </CardContent>
           </Card>
         )}
