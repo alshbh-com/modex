@@ -352,9 +352,13 @@ export type Database = {
           is_archived: boolean | null
           is_closed: boolean
           lock_status_updates: boolean
+          manual_arrived_total: number | null
           office_id: string
+          orange_extra_due: number | null
+          orange_extra_due_reason: string | null
           prevent_new_orders: boolean
           previous_due: number | null
+          show_postponed_due: boolean | null
         }
         Insert: {
           balance?: number | null
@@ -367,9 +371,13 @@ export type Database = {
           is_archived?: boolean | null
           is_closed?: boolean
           lock_status_updates?: boolean
+          manual_arrived_total?: number | null
           office_id: string
+          orange_extra_due?: number | null
+          orange_extra_due_reason?: string | null
           prevent_new_orders?: boolean
           previous_due?: number | null
+          show_postponed_due?: boolean | null
         }
         Update: {
           balance?: number | null
@@ -382,9 +390,13 @@ export type Database = {
           is_archived?: boolean | null
           is_closed?: boolean
           lock_status_updates?: boolean
+          manual_arrived_total?: number | null
           office_id?: string
+          orange_extra_due?: number | null
+          orange_extra_due_reason?: string | null
           prevent_new_orders?: boolean
           previous_due?: number | null
+          show_postponed_due?: boolean | null
         }
         Relationships: [
           {
@@ -564,6 +576,53 @@ export type Database = {
           sender_id?: string
         }
         Relationships: []
+      }
+      office_daily_closings: {
+        Row: {
+          closing_date: string
+          created_at: string
+          data_json: Json
+          id: string
+          is_closed: boolean
+          is_locked: boolean
+          office_id: string | null
+          pickup_rate: number
+          prevent_add: boolean
+          updated_at: string
+        }
+        Insert: {
+          closing_date?: string
+          created_at?: string
+          data_json?: Json
+          id?: string
+          is_closed?: boolean
+          is_locked?: boolean
+          office_id?: string | null
+          pickup_rate?: number
+          prevent_add?: boolean
+          updated_at?: string
+        }
+        Update: {
+          closing_date?: string
+          created_at?: string
+          data_json?: Json
+          id?: string
+          is_closed?: boolean
+          is_locked?: boolean
+          office_id?: string | null
+          pickup_rate?: number
+          prevent_add?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_daily_closings_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       office_payments: {
         Row: {
