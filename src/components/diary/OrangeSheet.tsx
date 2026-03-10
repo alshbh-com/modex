@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
@@ -36,6 +36,23 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
   // Local state for editable fields
   const [localFields, setLocalFields] = useState<Record<string, Record<string, string>>>({});
 
+  // Orange extra due fields - persisted to diary
+  const [orangeExtraDue, setOrangeExtraDue] = useState('');
+  const [orangeExtraDueReason, setOrangeExtraDueReason] = useState('');
+
+  useEffect(() => {
+    if (diary) {
+      const extra = (diary as any).orange_extra_due;
+      if (extra) setOrangeExtraDue(String(extra));
+      const reason = (diary as any).orange_extra_due_reason;
+      if (reason) setOrangeExtraDueReason(reason);
+    }
+  }, [diary?.id]);
+
+  const saveDiaryField = useCallback(async (field: string, value: any) => {
+    await supabase.from('diaries').update({ [field]: value } as any).eq('id', diary.id);
+  }, [diary?.id]);
+
   const getLocalValue = (id: string, field: string, dbValue: any) => {
     if (localFields[id]?.[field] !== undefined) return localFields[id][field];
     return dbValue != null && dbValue !== 0 ? String(dbValue) : '';
@@ -46,8 +63,9 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
   };
 
   const saveField = async (id: string, field: string, value: string) => {
-    const numVal = parseFloat(value) || 0;
-    await supabase.from('diary_orders').update({ [field]: numVal } as any).eq('id', id);
+    const isText = field === 'manual_return_status';
+    const val = isText ? value : (parseFloat(value) || 0);
+    await supabase.from('diary_orders').update({ [field]: val } as any).eq('id', id);
     qc.invalidateQueries({ queryKey: ['diary-orders', diary.id] });
   };
 
@@ -164,7 +182,8 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
   const totalShipping = filtered.reduce((s: number, d: any) => s + getShipping(d), 0);
   const totalPickup = filtered.reduce((s: number, d: any) => s + getPickup(d), 0);
   const totalArrived = filtered.reduce((s: number, d: any) => s + getArrived(d), 0);
-  const totalDue = totalAmount - (totalShipping + totalArrived + totalPickup);
+  const extraDueNum = parseFloat(orangeExtraDue) || 0;
+  const clientDue = (totalAmount + extraDueNum) - (totalArrived + totalShipping + totalPickup);
 
   return (
     <>
@@ -207,7 +226,6 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
             ) : (
               filtered.map((dOrder: any, idx: number) => {
                 const order = dOrder.orders;
-                const isReturn = RETURN_STATUSES.includes(dOrder.status_inside_diary) || dOrder.status_inside_diary === 'تسليم جزئي';
                 const arrivedVal = getArrived(dOrder);
 
                 return (
@@ -281,7 +299,19 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{isReturn ? dOrder.status_inside_diary : ''}</TableCell>
+                    <TableCell>
+                      <Input
+                        type="text"
+                        className="w-20 h-7 text-xs p-1"
+                        value={getLocalValue(dOrder.id, 'manual_return_status', dOrder.manual_return_status)}
+                        onChange={(e) => setLocalValue(dOrder.id, 'manual_return_status', e.target.value)}
+                        onBlur={() => {
+                          const val = localFields[dOrder.id]?.manual_return_status;
+                          if (val !== undefined) saveField(dOrder.id, 'manual_return_status', val);
+                        }}
+                        placeholder="-"
+                      />
+                    </TableCell>
                     <TableCell>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCopyOrder(dOrder.order_id)}>
                         <Copy className="h-3 w-3" />
@@ -302,16 +332,43 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
                 <TableCell className="text-green-600">{totalArrived}</TableCell>
                 <TableCell colSpan={3}></TableCell>
               </TableRow>
-              <TableRow className="bg-orange-100/50 dark:bg-orange-950/30 font-bold text-sm">
-                <TableCell colSpan={5} className="text-right">المستحق للعميل</TableCell>
-                <TableCell colSpan={7} className="text-primary text-base">
-                  {totalAmount} - ({totalShipping} + {totalArrived} + {totalPickup}) = <span className="text-lg">{totalDue}</span>
-                </TableCell>
-              </TableRow>
             </TableFooter>
           )}
         </Table>
       </div>
+
+      {/* Orange extra due section */}
+      {filtered.length > 0 && (
+        <div className="mt-4 border rounded-lg p-4 space-y-3 bg-orange-50/30 dark:bg-orange-950/10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">مستحق إضافي للعميل</label>
+              <Input
+                type="number"
+                value={orangeExtraDue}
+                onChange={(e) => setOrangeExtraDue(e.target.value)}
+                onBlur={() => saveDiaryField('orange_extra_due', parseFloat(orangeExtraDue) || 0)}
+                className="h-8 text-sm"
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">سبب المستحق الإضافي</label>
+              <Input
+                type="text"
+                value={orangeExtraDueReason}
+                onChange={(e) => setOrangeExtraDueReason(e.target.value)}
+                onBlur={() => saveDiaryField('orange_extra_due_reason', orangeExtraDueReason)}
+                className="h-8 text-sm"
+                placeholder="السبب..."
+              />
+            </div>
+          </div>
+          <div className="border-t border-border pt-3 text-sm font-bold">
+            المستحق للعميل = ({totalAmount} + {extraDueNum}) - ({totalArrived} + {totalShipping} + {totalPickup}) = <span className="text-primary text-lg">{clientDue}</span>
+          </div>
+        </div>
+      )}
 
       {/* Add Order Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>

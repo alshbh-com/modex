@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Download, Share2, Lock, Unlock, Ban, Check } from 'lucide-react';
+import { Plus, Trash2, Download, Share2, Lock, Unlock, Ban, Check, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
@@ -38,6 +38,9 @@ export default function OfficeSettlement() {
   const [offices, setOffices] = useState<any[]>([]);
   const [statuses, setStatuses] = useState<any[]>([]);
   const [selectedOffice, setSelectedOffice] = useState<string>('all');
+  const [closingDate, setClosingDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [closingId, setClosingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Diary-like controls
   const [isLocked, setIsLocked] = useState(false);
@@ -49,32 +52,101 @@ export default function OfficeSettlement() {
     supabase.from('order_statuses').select('id, name').order('sort_order').then(({ data }) => setStatuses(data || []));
   }, []);
 
+  // Load saved closing data
   useEffect(() => {
     if (selectedOffice && selectedOffice !== 'all') {
-      supabase.from('orders').select('*, order_statuses(name, color)')
-        .eq('office_id', selectedOffice)
-        .eq('is_closed', false)
-        .order('created_at', { ascending: false })
-        .then(({ data }) => {
-          if (data && data.length > 0) {
-            setRows(data.map(o => ({
-              id: o.id,
-              code: o.customer_code || '',
-              name: o.customer_name || '',
-              status_id: o.status_id || '',
-              pieces: String(o.quantity || 1),
-              amount: String((Number(o.price) || 0) + (Number(o.delivery_price) || 0)),
-              shipping: String(Number(o.delivery_price) || 0),
-              arrived: '0',
-            })));
-          } else {
-            setRows([newRow()]);
-          }
-        });
+      loadClosingData();
+    } else {
+      resetState();
+    }
+  }, [selectedOffice, closingDate]);
+
+  const resetState = () => {
+    setRows([newRow()]);
+    setPickupRate('');
+    setIsLocked(false);
+    setIsClosed(false);
+    setPreventAdd(false);
+    setClosingId(null);
+  };
+
+  const loadClosingData = async () => {
+    // Try to load from DB first
+    const { data } = await supabase
+      .from('office_daily_closings' as any)
+      .select('*')
+      .eq('office_id', selectedOffice)
+      .eq('closing_date', closingDate)
+      .maybeSingle();
+
+    if (data) {
+      const saved = data as any;
+      setClosingId(saved.id);
+      setPickupRate(String(saved.pickup_rate || ''));
+      setIsLocked(saved.is_locked);
+      setIsClosed(saved.is_closed);
+      setPreventAdd(saved.prevent_add);
+      const jsonData = saved.data_json;
+      if (jsonData && Array.isArray(jsonData) && jsonData.length > 0) {
+        setRows(jsonData);
+        return;
+      }
+    } else {
+      setClosingId(null);
+    }
+
+    // If no saved data, load from orders
+    const { data: orderData } = await supabase.from('orders').select('*, order_statuses(name, color)')
+      .eq('office_id', selectedOffice)
+      .eq('is_closed', false)
+      .order('created_at', { ascending: false });
+
+    if (orderData && orderData.length > 0) {
+      setRows(orderData.map(o => ({
+        id: o.id,
+        code: o.customer_code || '',
+        name: o.customer_name || '',
+        status_id: o.status_id || '',
+        pieces: String(o.quantity || 1),
+        amount: String((Number(o.price) || 0) + (Number(o.delivery_price) || 0)),
+        shipping: String(Number(o.delivery_price) || 0),
+        arrived: '0',
+      })));
     } else {
       setRows([newRow()]);
     }
-  }, [selectedOffice]);
+  };
+
+  const saveToDb = async () => {
+    if (!selectedOffice || selectedOffice === 'all') {
+      toast.error('اختر مكتب أولاً');
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        office_id: selectedOffice,
+        closing_date: closingDate,
+        data_json: rows,
+        pickup_rate: parseFloat(pickupRate) || 0,
+        is_locked: isLocked,
+        is_closed: isClosed,
+        prevent_add: preventAdd,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (closingId) {
+        await supabase.from('office_daily_closings' as any).update(payload).eq('id', closingId);
+      } else {
+        const { data } = await supabase.from('office_daily_closings' as any).insert(payload).select().single();
+        if (data) setClosingId((data as any).id);
+      }
+      toast.success('تم حفظ البيانات');
+    } catch {
+      toast.error('فشل الحفظ');
+    }
+    setSaving(false);
+  };
 
   const addRow = () => {
     if (preventAdd) { toast.error('الإضافة ممنوعة'); return; }
@@ -127,7 +199,7 @@ export default function OfficeSettlement() {
       .total-row { background: #e8f4e8; font-weight: bold; }
       .summary { margin-top: 12px; border: 2px solid #000; padding: 8px; font-size: 12px; }
     </style></head><body>
-    <div class="header">تقفيلة ${officeName} | ${format(new Date(), 'dd/MM/yyyy')}</div>
+    <div class="header">تقفيلة ${officeName} | ${format(new Date(closingDate), 'dd/MM/yyyy')}</div>
     <table>
       <thead><tr><th>#</th><th>الكود</th><th>الاسم</th><th>الحالة</th><th>القطع</th><th>المبلغ</th><th>الشحن</th><th>الواصل</th></tr></thead>
       <tbody>${tableRows}
@@ -154,12 +226,12 @@ export default function OfficeSettlement() {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'تقفيلة');
-    XLSX.writeFile(wb, `تقفيلة-${officeName}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    XLSX.writeFile(wb, `تقفيلة-${officeName}-${closingDate}.xlsx`);
   };
 
   const shareWhatsApp = () => {
     const statusName = (sid: string) => statuses.find(s => s.id === sid)?.name || '-';
-    let text = `📋 *تقفيلة ${officeName}*\n📅 ${format(new Date(), 'dd/MM/yyyy')}\n━━━━━━━━━━━━━━━━━━\n\n`;
+    let text = `📋 *تقفيلة ${officeName}*\n📅 ${format(new Date(closingDate), 'dd/MM/yyyy')}\n━━━━━━━━━━━━━━━━━━\n\n`;
     rows.forEach((r, i) => {
       if (r.name || r.code) text += `${i + 1}. ${r.name} | ${r.code} | ${statusName(r.status_id)} | ${r.amount} | شحن: ${r.shipping} | واصل: ${r.arrived}\n`;
     });
@@ -176,6 +248,7 @@ export default function OfficeSettlement() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">تقفيلة المكاتب</h1>
         <div className="flex flex-wrap gap-2 items-center">
+          <Input type="date" value={closingDate} onChange={e => setClosingDate(e.target.value)} className="w-40 bg-secondary border-border" />
           <Select value={selectedOffice} onValueChange={setSelectedOffice}>
             <SelectTrigger className="w-[200px] bg-secondary border-border"><SelectValue placeholder="اختر مكتب..." /></SelectTrigger>
             <SelectContent>
@@ -191,6 +264,9 @@ export default function OfficeSettlement() {
 
       {/* Controls toolbar */}
       <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="default" onClick={saveToDb} disabled={saving || !selectedOffice || selectedOffice === 'all'}>
+          <Save className="h-4 w-4 ml-1" />{saving ? 'جاري الحفظ...' : 'حفظ'}
+        </Button>
         <Button size="sm" variant={isClosed ? 'default' : 'secondary'} onClick={() => setIsClosed(!isClosed)}>
           {isClosed ? <Unlock className="h-4 w-4 ml-1" /> : <Lock className="h-4 w-4 ml-1" />}
           {isClosed ? 'إعادة فتح' : 'قفل الشيت'}
@@ -213,6 +289,10 @@ export default function OfficeSettlement() {
           <Share2 className="h-4 w-4 ml-1" /> واتساب
         </Button>
       </div>
+
+      {closingId && (
+        <p className="text-xs text-muted-foreground">✅ البيانات محفوظة في قاعدة البيانات</p>
+      )}
 
       <Card className="bg-card border-border">
         <CardContent className="p-0">

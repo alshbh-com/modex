@@ -531,10 +531,10 @@ export default function AccountingDashboard() {
             </div>
             <div>
               <label className="text-sm font-medium">المكتب (اختياري)</label>
-              <Select value={expenseForm.office_id} onValueChange={(v) => setExpenseForm(p => ({ ...p, office_id: v }))}>
+              <Select value={expenseForm.office_id || 'none'} onValueChange={(v) => setExpenseForm(p => ({ ...p, office_id: v === 'none' ? '' : v }))}>
                 <SelectTrigger><SelectValue placeholder="بدون مكتب" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">بدون مكتب</SelectItem>
+                  <SelectItem value="none">بدون مكتب</SelectItem>
                   {offices.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -584,10 +584,10 @@ export default function AccountingDashboard() {
             </div>
             <div>
               <label className="text-sm font-medium">المكتب (اختياري)</label>
-              <Select value={cashFlowForm.office_id} onValueChange={(v) => setCashFlowForm(p => ({ ...p, office_id: v }))}>
+              <Select value={cashFlowForm.office_id || 'none'} onValueChange={(v) => setCashFlowForm(p => ({ ...p, office_id: v === 'none' ? '' : v }))}>
                 <SelectTrigger><SelectValue placeholder="بدون مكتب" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">بدون مكتب</SelectItem>
+                  <SelectItem value="none">بدون مكتب</SelectItem>
                   {offices.map((o: any) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
                 </SelectContent>
               </Select>

@@ -4,13 +4,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, MessageSquare } from 'lucide-react';
+import { Search, MessageSquare, ChevronDown, ChevronUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function OrderNotes() {
   const [notes, setNotes] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [search, setSearch] = useState('');
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadData(); }, []);
 
@@ -27,6 +29,15 @@ export default function OrderNotes() {
 
   const getUser = (id: string) => profiles.find(p => p.id === id)?.full_name || 'غير معروف';
   const getOrder = (id: string) => orders.find(o => o.id === id);
+
+  const toggleExpand = (id: string) => {
+    setExpandedNotes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const filtered = notes.filter(n => {
     if (!search.trim()) return true;
@@ -69,6 +80,8 @@ export default function OrderNotes() {
                   <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">لا توجد ملاحظات</TableCell></TableRow>
                 ) : filtered.map(n => {
                   const order = getOrder(n.order_id);
+                  const isLong = n.note.length > 60;
+                  const isExpanded = expandedNotes.has(n.id);
                   return (
                     <TableRow key={n.id} className="border-border">
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{new Date(n.created_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</TableCell>
@@ -76,7 +89,16 @@ export default function OrderNotes() {
                       <TableCell className="text-sm">{order?.customer_name || '-'}</TableCell>
                       <TableCell className="font-mono text-xs">{order?.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">{order?.offices?.name || '-'}</TableCell>
-                      <TableCell className="text-sm max-w-[200px] truncate">{n.note}</TableCell>
+                      <TableCell className="text-sm max-w-[300px]">
+                        <div className={isExpanded ? 'whitespace-pre-wrap break-words' : ''}>
+                          {isExpanded || !isLong ? n.note : n.note.slice(0, 60) + '...'}
+                        </div>
+                        {isLong && (
+                          <Button size="sm" variant="ghost" className="h-5 p-0 text-xs text-primary" onClick={() => toggleExpand(n.id)}>
+                            {isExpanded ? <><ChevronUp className="h-3 w-3 ml-1" />تقليص</> : <><ChevronDown className="h-3 w-3 ml-1" />عرض المزيد</>}
+                          </Button>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">{getUser(n.user_id)}</TableCell>
                     </TableRow>
                   );

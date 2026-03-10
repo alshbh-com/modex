@@ -13,12 +13,13 @@ function calcRow(dOrder: any) {
     postponed: status === 'مؤجل' ? price : 0,
     returned: status === 'تسليم جزئي' ? (price - partial) : (RETURN_STATUSES.includes(status) ? price : 0),
     partial: status === 'تسليم جزئي' ? partial : 0,
-    shippingDiff: Number(dOrder.manual_shipping_diff) || (status === 'فرق شحن' ? price : 0),
-    transferDelivery: Number(dOrder.manual_delivery_commission) || (status === 'عمولة التسليم' ? price : 0),
-    refuseNoShipping: Number(dOrder.manual_reject_no_ship) || (status === 'رفض دون شحن' ? price : 0),
-    returnPenalty: Number(dOrder.manual_return_penalty) || (status === 'غرامة مرتجع' ? price : 0),
+    shippingDiff: Number(dOrder.manual_shipping_diff) || 0,
+    transferDelivery: Number(dOrder.manual_delivery_commission) || 0,
+    refuseNoShipping: Number(dOrder.manual_reject_no_ship) || 0,
+    returnPenalty: Number(dOrder.manual_return_penalty) || 0,
     pickup: Number(dOrder.manual_pickup) || 0,
     status,
+    returnStatus: dOrder.manual_return_status || '',
   };
 }
 
@@ -34,7 +35,7 @@ function calcOrangeRow(dOrder: any) {
   if (manualArrived > 0) arrived = manualArrived;
   else if (dOrder.status_inside_diary === 'تم التسليم') arrived = total;
   else if (dOrder.status_inside_diary === 'تسليم جزئي') arrived = (dOrder.partial_amount || 0) + shipping;
-  return { total, shipping, pickup, arrived, status: dOrder.status_inside_diary };
+  return { total, shipping, pickup, arrived, status: dOrder.status_inside_diary, returnStatus: dOrder.manual_return_status || '' };
 }
 
 export function exportDiaryToPDF(
@@ -60,14 +61,20 @@ export function exportDiaryToPDF(
     const r = calcOrangeRow(d);
     return { total: acc.total + r.total, shipping: acc.shipping + r.shipping, pickup: acc.pickup + r.pickup, arrived: acc.arrived + r.arrived };
   }, { total: 0, shipping: 0, pickup: 0, arrived: 0 });
-  const orangeDue = orangeTotals.total - (orangeTotals.shipping + orangeTotals.arrived + orangeTotals.pickup);
+
+  const extraDue = Number((diary as any).orange_extra_due) || 0;
+  const extraDueReason = (diary as any).orange_extra_due_reason || '';
+  const orangeClientDue = (orangeTotals.total + extraDue) - (orangeTotals.arrived + orangeTotals.shipping + orangeTotals.pickup);
 
   const cashEntries: number[] = Array.isArray((diary as any).cash_arrived_entries) ? (diary as any).cash_arrived_entries.map(Number).filter((n: number) => !isNaN(n)) : [];
   const totalCash = cashEntries.reduce((s: number, v: number) => s + v, 0);
   const balanceNum = Number((diary as any).balance) || 0;
   const previousDueNum = Number((diary as any).previous_due) || 0;
+  const manualArrivedTotal = (diary as any).manual_arrived_total != null ? Number((diary as any).manual_arrived_total) : totals.executed;
   const diaryDiff = totals.price - totalCash;
-  const finalDue = (diaryDiff + previousDueNum) - (balanceNum + totals.returned + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
+  const finalDue = (diaryDiff + previousDueNum) - (balanceNum + manualArrivedTotal + totals.returned + totals.postponed + totals.pickup + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
+  const dueWithPostponed = finalDue + totals.postponed;
+  const showPostponedDue = (diary as any).show_postponed_due !== false;
 
   const financialRows = diaryOrders.map((dOrder: any, idx: number) => {
     const order = dOrder.orders;
@@ -80,19 +87,18 @@ export function exportDiaryToPDF(
       <td>${row.shippingDiff || ''}</td><td>${row.transferDelivery || ''}</td>
       <td>${row.refuseNoShipping || ''}</td><td>${row.returnPenalty || ''}</td>
       <td>${row.status}</td>
-      <td>${RETURN_STATUSES.includes(row.status) || row.status === 'تسليم جزئي' ? row.status : ''}</td>
+      <td>${row.returnStatus}</td>
     </tr>`;
   }).join('');
 
   const orangeRows = diaryOrders.map((dOrder: any, idx: number) => {
     const order = dOrder.orders;
     const r = calcOrangeRow(dOrder);
-    const isReturn = RETURN_STATUSES.includes(dOrder.status_inside_diary) || dOrder.status_inside_diary === 'تسليم جزئي';
     return `<tr>
       <td>${idx + 1}</td><td>${order?.barcode || ''}</td><td>${order?.customer_name || ''}</td>
       <td>${order?.address || ''}</td><td>${order?.quantity || 1}</td>
       <td>${r.total}</td><td>${r.shipping}</td><td>${r.pickup}</td><td>${r.arrived || ''}</td>
-      <td>${dOrder.status_inside_diary}</td><td>${isReturn ? dOrder.status_inside_diary : ''}</td>
+      <td>${dOrder.status_inside_diary}</td><td>${r.returnStatus}</td>
     </tr>`;
   }).join('');
 
@@ -111,7 +117,7 @@ export function exportDiaryToPDF(
       <tbody>${financialRows}
         <tr class="total-row">
           <td colspan="4">الإجمالي</td>
-          <td>${totals.price}</td><td>${totals.executed}</td><td>${totals.postponed}</td>
+          <td>${totals.price}</td><td>${manualArrivedTotal}</td><td>${totals.postponed}</td>
           <td>${totals.returned}</td><td>${totals.partial}</td><td>${totals.pickup}</td>
           <td>${totals.shippingDiff}</td><td>${totals.transferDelivery}</td>
           <td>${totals.refuseNoShipping}</td><td>${totals.returnPenalty}</td>
@@ -123,7 +129,8 @@ export function exportDiaryToPDF(
       <div><strong>الملخص المالي:</strong></div>
       <div>الواصل نقدي: ${totalCash} | الرصيد: ${balanceNum} | مستحق سابق: ${previousDueNum}</div>
       <div>فرق اليومية = ${totals.price} - ${totalCash} = <strong>${diaryDiff}</strong></div>
-      <div>المستحق = (${diaryDiff} + ${previousDueNum}) - (${balanceNum} + ${totals.returned} + ${totals.shippingDiff} + ${totals.transferDelivery} + ${totals.refuseNoShipping} + ${totals.returnPenalty}) = <strong>${finalDue}</strong></div>
+      <div>المستحق = (${diaryDiff} + ${previousDueNum}) - (${balanceNum} + ${manualArrivedTotal} + ${totals.returned} + ${totals.postponed} + ${totals.pickup} + ${totals.shippingDiff} + ${totals.transferDelivery} + ${totals.refuseNoShipping} + ${totals.returnPenalty}) = <strong>${finalDue}</strong></div>
+      ${showPostponedDue ? `<div>المستحق بالنزول (المؤجل) = ${finalDue} + ${totals.postponed} = <strong>${dueWithPostponed}</strong></div>` : ''}
     </div>
   ` : '';
 
@@ -147,8 +154,9 @@ export function exportDiaryToPDF(
       </tbody>
     </table>
     <div class="summary">
-      <div><strong>حساب المستحق:</strong></div>
-      <div>المستحق = ${orangeTotals.total} - (${orangeTotals.shipping} + ${orangeTotals.arrived} + ${orangeTotals.pickup}) = <strong>${orangeDue}</strong></div>
+      <div><strong>حساب المستحق للعميل:</strong></div>
+      ${extraDue > 0 ? `<div>مستحق إضافي: ${extraDue}${extraDueReason ? ` (${extraDueReason})` : ''}</div>` : ''}
+      <div>المستحق للعميل = (${orangeTotals.total} + ${extraDue}) - (${orangeTotals.arrived} + ${orangeTotals.shipping} + ${orangeTotals.pickup}) = <strong>${orangeClientDue}</strong></div>
     </div>
   ` : '';
 
@@ -192,7 +200,7 @@ export function exportDiaryToExcel(diary: any, diaryOrders: any[], officeName: s
       'تسليم جزئي': row.partial || '', 'بيك اب': row.pickup || '',
       'فرق شحن': row.shippingDiff || '', 'عمولة التسليم': row.transferDelivery || '',
       'رفض دون شحن': row.refuseNoShipping || '', 'غرامة مرتجع': row.returnPenalty || '',
-      'الحالة': row.status, 'حالة المرتجع': RETURN_STATUSES.includes(row.status) || row.status === 'تسليم جزئي' ? row.status : '',
+      'الحالة': row.status, 'حالة المرتجع': row.returnStatus,
     };
   });
   const ws1 = XLSX.utils.json_to_sheet(financialRows);
@@ -202,12 +210,11 @@ export function exportDiaryToExcel(diary: any, diaryOrders: any[], officeName: s
   const orangeRowsData = diaryOrders.map((dOrder: any, idx: number) => {
     const order = dOrder.orders;
     const r = calcOrangeRow(dOrder);
-    const isReturn = RETURN_STATUSES.includes(dOrder.status_inside_diary) || dOrder.status_inside_diary === 'تسليم جزئي';
     return {
       '#': idx + 1, 'الباركود': order?.barcode || '', 'الاسم': order?.customer_name || '',
       'العنوان': order?.address || '', 'القطع': order?.quantity || 1,
       'الإجمالي': r.total, 'الشحن': r.shipping, 'بيك اب': r.pickup, 'الواصل': r.arrived || '',
-      'الحالة': dOrder.status_inside_diary, 'حالة المرتجع': isReturn ? dOrder.status_inside_diary : '',
+      'الحالة': dOrder.status_inside_diary, 'حالة المرتجع': r.returnStatus,
     };
   });
   const ws2 = XLSX.utils.json_to_sheet(orangeRowsData);

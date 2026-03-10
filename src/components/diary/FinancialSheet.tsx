@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
 import { Copy, Plus } from 'lucide-react';
@@ -31,13 +32,15 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
   const [collectedAmount, setCollectedAmount] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Local state for manual inputs (prevents re-render reset on every keystroke)
+  // Local state for manual inputs
   const [localFields, setLocalFields] = useState<Record<string, Record<string, string>>>({});
 
   // Financial summary - persisted to diary
   const [cashArrivedEntries, setCashArrivedEntries] = useState<string[]>(['']);
   const [balance, setBalance] = useState('');
   const [previousDue, setPreviousDue] = useState('');
+  const [showPostponedDue, setShowPostponedDue] = useState(true);
+  const [manualArrivedTotal, setManualArrivedTotal] = useState<string>('');
 
   // Load persisted financial data from diary
   useEffect(() => {
@@ -50,10 +53,13 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       if (bal) setBalance(String(bal));
       const prev = (diary as any).previous_due;
       if (prev) setPreviousDue(String(prev));
+      setShowPostponedDue((diary as any).show_postponed_due !== false);
+      const mat = (diary as any).manual_arrived_total;
+      if (mat != null) setManualArrivedTotal(String(mat));
     }
   }, [diary?.id]);
 
-  // Save financial summary to diary (debounced via onBlur)
+  // Save financial summary to diary
   const saveFinancialSummary = useCallback(async (field: string, value: any) => {
     await supabase.from('diaries').update({ [field]: value } as any).eq('id', diary.id);
   }, [diary?.id]);
@@ -144,12 +150,12 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
       postponed: status === 'مؤجل' ? price : 0,
       returned: status === 'تسليم جزئي' ? (price - partial) : (RETURN_STATUSES.includes(status) ? price : 0),
       partial: status === 'تسليم جزئي' ? partial : 0,
-      shippingDiff: manualShippingDiff || (status === 'فرق شحن' ? price : 0),
-      transferDelivery: manualDeliveryCommission || (status === 'عمولة التسليم' ? price : 0),
-      refuseNoShipping: manualRejectNoShip || (status === 'رفض دون شحن' ? price : 0),
-      returnPenalty: manualReturnPenalty || (status === 'غرامة مرتجع' ? price : 0),
+      shippingDiff: manualShippingDiff,
+      transferDelivery: manualDeliveryCommission,
+      refuseNoShipping: manualRejectNoShip,
+      returnPenalty: manualReturnPenalty,
       pickup: manualPickup,
-      returnStatus: manualReturnStatus || (RETURN_STATUSES.includes(status) || status === 'تسليم جزئي' ? status : ''),
+      returnStatus: manualReturnStatus,
     };
   };
 
@@ -177,6 +183,9 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
     },
     { price: 0, executed: 0, postponed: 0, returned: 0, partial: 0, shippingDiff: 0, transferDelivery: 0, refuseNoShipping: 0, returnPenalty: 0, pickup: 0 }
   );
+
+  // Use manual arrived total if user has set it, otherwise use calculated
+  const displayArrivedTotal = manualArrivedTotal !== '' ? (parseFloat(manualArrivedTotal) || 0) : totals.executed;
 
   const renderManualInput = (dOrder: any, field: string, dbValue: any, width = 'w-16', isText = false) => (
     <Input
@@ -279,7 +288,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                       </Select>
                     </TableCell>
                     <TableCell>
-                      {renderManualInput(dOrder, 'manual_return_status', dOrder.manual_return_status || row.returnStatus, 'w-20', true)}
+                      {renderManualInput(dOrder, 'manual_return_status', dOrder.manual_return_status, 'w-20', true)}
                     </TableCell>
                     <TableCell>
                       <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onCopyOrder(dOrder.order_id)}>
@@ -296,7 +305,18 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
               <TableRow className="bg-muted/30 font-bold text-sm">
                 <TableCell colSpan={4} className="text-right">الإجمالي</TableCell>
                 <TableCell>{totals.price}</TableCell>
-                <TableCell className="text-green-600">{totals.executed}</TableCell>
+                <TableCell className="text-green-600">
+                  <Input
+                    type="number"
+                    className="w-20 h-7 text-xs p-1 font-bold text-green-600"
+                    value={manualArrivedTotal !== '' ? manualArrivedTotal : String(totals.executed)}
+                    onChange={(e) => setManualArrivedTotal(e.target.value)}
+                    onBlur={() => {
+                      const val = manualArrivedTotal !== '' ? (parseFloat(manualArrivedTotal) || 0) : null;
+                      saveFinancialSummary('manual_arrived_total', val);
+                    }}
+                  />
+                </TableCell>
                 <TableCell className="text-yellow-600">{totals.postponed}</TableCell>
                 <TableCell className="text-red-600">{totals.returned}</TableCell>
                 <TableCell className="text-blue-600">{totals.partial}</TableCell>
@@ -321,7 +341,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
           </div>
           <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">إجمالي المنفذ</p>
-            <p className="text-lg font-bold text-green-600">{totals.executed}</p>
+            <p className="text-lg font-bold text-green-600">{displayArrivedTotal}</p>
           </div>
           <div className="bg-yellow-50 dark:bg-yellow-950/20 rounded-lg p-3 text-center">
             <p className="text-xs text-muted-foreground">إجمالي النزول</p>
@@ -386,7 +406,8 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                 const balanceNum = parseFloat(balance) || 0;
                 const previousDueNum = parseFloat(previousDue) || 0;
                 const diaryDiff = totals.price - totalCashArrived;
-                const finalDue = (diaryDiff + previousDueNum) - (balanceNum + totals.returned + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
+                const finalDue = (diaryDiff + previousDueNum) - (balanceNum + displayArrivedTotal + totals.returned + totals.postponed + totals.pickup + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
+                const dueWithPostponed = finalDue + totals.postponed;
 
                 return (
                   <>
@@ -406,9 +427,29 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                         onBlur={() => saveFinancialSummary('previous_due', parseFloat(previousDue) || 0)}
                         className="h-8 text-sm w-36" placeholder="0" />
                     </div>
-                    <div className="border-t border-border pt-2 space-y-1 text-sm">
+                    <div className="border-t border-border pt-2 space-y-2 text-sm">
                       <div>فرق اليومية = {totals.price} - {totalCashArrived} = <strong>{diaryDiff}</strong></div>
-                      <div>المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {totals.returned} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary text-lg">{finalDue}</strong></div>
+                      <div>
+                        المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {displayArrivedTotal} + {totals.returned} + {totals.postponed} + {totals.pickup} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary text-lg">{finalDue}</strong>
+                      </div>
+                      
+                      {/* Show/Hide postponed due toggle */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Switch
+                          checked={showPostponedDue}
+                          onCheckedChange={(checked) => {
+                            setShowPostponedDue(checked);
+                            saveFinancialSummary('show_postponed_due', checked);
+                          }}
+                        />
+                        <label className="text-sm">إظهار المستحق بالنزول (المؤجل)</label>
+                      </div>
+
+                      {showPostponedDue && (
+                        <div className="bg-yellow-50 dark:bg-yellow-950/20 p-2 rounded border border-yellow-200 dark:border-yellow-800">
+                          المستحق بالنزول (المؤجل) = {finalDue} + {totals.postponed} = <strong className="text-primary text-lg">{dueWithPostponed}</strong>
+                        </div>
+                      )}
                     </div>
                   </>
                 );

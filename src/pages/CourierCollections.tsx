@@ -293,7 +293,7 @@ export default function CourierCollections() {
                       <TableHead className="text-right">الإجمالي</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">التحصيل</TableHead>
-                      <TableHead className="text-right">ملاحظات</TableHead>
+                      <TableHead className="text-right">تعليق</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -322,7 +322,7 @@ export default function CourierCollections() {
                               onChange={(e) => updateOrderNotes(o.id, e.target.value)}
                               onBlur={() => saveOrderNotes(o.id)}
                               className="bg-secondary border-border h-7 w-32 text-xs"
-                              placeholder="ملاحظة..."
+                              placeholder="تعليق..."
                             />
                           </TableCell>
                         </TableRow>
