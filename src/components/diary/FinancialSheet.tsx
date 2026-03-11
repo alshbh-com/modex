@@ -406,7 +406,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                 const balanceNum = parseFloat(balance) || 0;
                 const previousDueNum = parseFloat(previousDue) || 0;
                 const diaryDiff = totals.price - totalCashArrived;
-                const finalDue = (diaryDiff + previousDueNum) - (balanceNum + displayArrivedTotal + totals.returned + totals.postponed + totals.pickup + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
+                const finalDue = (diaryDiff + previousDueNum) - (balanceNum + totals.returned + totals.postponed + totals.pickup + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
                 const dueWithPostponed = finalDue + totals.postponed;
 
                 return (
@@ -430,7 +430,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                     <div className="border-t border-border pt-2 space-y-2 text-sm">
                       <div>فرق اليومية = {totals.price} - {totalCashArrived} = <strong>{diaryDiff}</strong></div>
                       <div>
-                        المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {displayArrivedTotal} + {totals.returned} + {totals.postponed} + {totals.pickup} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary text-lg">{finalDue}</strong>
+                        المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {totals.returned} + {totals.postponed} + {totals.pickup} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary text-lg">{finalDue}</strong>
                       </div>
                       
                       {/* Show/Hide postponed due toggle */}

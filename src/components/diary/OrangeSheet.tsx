@@ -164,17 +164,14 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
   };
 
   const getPickup = (dOrder: any) => {
-    const manual = Number(dOrder.manual_pickup);
-    if (manual > 0) return manual;
-    return Number(dOrder.orders?.shipping_paid) || 0;
+    if (dOrder.manual_pickup != null && dOrder.manual_pickup !== 0) return Number(dOrder.manual_pickup);
+    if (localFields[dOrder.id]?.manual_pickup !== undefined) return Number(localFields[dOrder.id].manual_pickup) || 0;
+    return 0;
   };
 
   const getArrived = (dOrder: any) => {
-    const manual = Number(dOrder.manual_arrived);
-    if (manual > 0) return manual;
-    const total = getAmount(dOrder);
-    if (dOrder.status_inside_diary === 'تم التسليم') return total;
-    if (dOrder.status_inside_diary === 'تسليم جزئي') return (dOrder.partial_amount || 0) + getShipping(dOrder);
+    if (dOrder.manual_arrived != null && dOrder.manual_arrived !== 0) return Number(dOrder.manual_arrived);
+    if (localFields[dOrder.id]?.manual_arrived !== undefined) return Number(localFields[dOrder.id].manual_arrived) || 0;
     return 0;
   };
 
@@ -266,7 +263,7 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
                       <Input
                         type="number"
                         className="w-16 h-7 text-xs p-1"
-                        value={getLocalValue(dOrder.id, 'manual_pickup', dOrder.manual_pickup || (Number(order?.shipping_paid) || 0))}
+                        value={getLocalValue(dOrder.id, 'manual_pickup', dOrder.manual_pickup)}
                         onChange={(e) => setLocalValue(dOrder.id, 'manual_pickup', e.target.value)}
                         onBlur={() => {
                           const val = localFields[dOrder.id]?.manual_pickup;
@@ -279,7 +276,7 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
                       <Input
                         type="number"
                         className="w-20 h-7 text-xs p-1 text-green-600 font-medium"
-                        value={getLocalValue(dOrder.id, 'manual_arrived', dOrder.manual_arrived || arrivedVal)}
+                        value={getLocalValue(dOrder.id, 'manual_arrived', dOrder.manual_arrived)}
                         onChange={(e) => setLocalValue(dOrder.id, 'manual_arrived', e.target.value)}
                         onBlur={() => {
                           const val = localFields[dOrder.id]?.manual_arrived;

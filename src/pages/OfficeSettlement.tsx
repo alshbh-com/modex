@@ -72,12 +72,13 @@ export default function OfficeSettlement() {
 
   const loadClosingData = async () => {
     // Try to load from DB first
-    const { data } = await supabase
-      .from('office_daily_closings' as any)
+    const { data, error } = await supabase
+      .from('office_daily_closings')
       .select('*')
       .eq('office_id', selectedOffice)
       .eq('closing_date', closingDate)
       .maybeSingle();
+    if (error) { console.error('Load error:', error); }
 
     if (data) {
       const saved = data as any;
@@ -136,14 +137,16 @@ export default function OfficeSettlement() {
       };
 
       if (closingId) {
-        await supabase.from('office_daily_closings' as any).update(payload).eq('id', closingId);
+        const { error } = await supabase.from('office_daily_closings').update(payload as any).eq('id', closingId);
+        if (error) { toast.error('فشل التحديث: ' + error.message); setSaving(false); return; }
       } else {
-        const { data } = await supabase.from('office_daily_closings' as any).insert(payload).select().single();
+        const { data, error } = await supabase.from('office_daily_closings').insert(payload as any).select().single();
+        if (error) { toast.error('فشل الحفظ: ' + error.message); setSaving(false); return; }
         if (data) setClosingId((data as any).id);
       }
       toast.success('تم حفظ البيانات');
-    } catch {
-      toast.error('فشل الحفظ');
+    } catch (e: any) {
+      toast.error('فشل الحفظ: ' + (e?.message || ''));
     }
     setSaving(false);
   };
