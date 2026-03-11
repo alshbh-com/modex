@@ -72,12 +72,13 @@ export default function OfficeSettlement() {
 
   const loadClosingData = async () => {
     // Try to load from DB first
-    const { data } = await supabase
-      .from('office_daily_closings' as any)
+    const { data, error } = await supabase
+      .from('office_daily_closings')
       .select('*')
       .eq('office_id', selectedOffice)
       .eq('closing_date', closingDate)
       .maybeSingle();
+    if (error) { console.error('Load error:', error); }
 
     if (data) {
       const saved = data as any;

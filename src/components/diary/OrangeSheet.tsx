@@ -276,7 +276,7 @@ export default function OrangeSheet({ diary, diaryOrders, onCopyOrder }: Props) 
                       <Input
                         type="number"
                         className="w-20 h-7 text-xs p-1 text-green-600 font-medium"
-                        value={getLocalValue(dOrder.id, 'manual_arrived', dOrder.manual_arrived || arrivedVal)}
+                        value={getLocalValue(dOrder.id, 'manual_arrived', dOrder.manual_arrived)}
                         onChange={(e) => setLocalValue(dOrder.id, 'manual_arrived', e.target.value)}
                         onBlur={() => {
                           const val = localFields[dOrder.id]?.manual_arrived;

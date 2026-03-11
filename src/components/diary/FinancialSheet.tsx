@@ -430,7 +430,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                     <div className="border-t border-border pt-2 space-y-2 text-sm">
                       <div>فرق اليومية = {totals.price} - {totalCashArrived} = <strong>{diaryDiff}</strong></div>
                       <div>
-                        المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {displayArrivedTotal} + {totals.returned} + {totals.postponed} + {totals.pickup} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary text-lg">{finalDue}</strong>
+                        المستحق = ({diaryDiff} + {previousDueNum}) - ({balanceNum} + {totals.returned} + {totals.postponed} + {totals.pickup} + {totals.shippingDiff} + {totals.transferDelivery} + {totals.refuseNoShipping} + {totals.returnPenalty}) = <strong className="text-primary text-lg">{finalDue}</strong>
                       </div>
                       
                       {/* Show/Hide postponed due toggle */}
