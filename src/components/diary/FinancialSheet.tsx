@@ -406,7 +406,7 @@ export default function FinancialSheet({ diary, diaryOrders, onCopyOrder }: Prop
                 const balanceNum = parseFloat(balance) || 0;
                 const previousDueNum = parseFloat(previousDue) || 0;
                 const diaryDiff = totals.price - totalCashArrived;
-                const finalDue = (diaryDiff + previousDueNum) - (balanceNum + displayArrivedTotal + totals.returned + totals.postponed + totals.pickup + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
+                const finalDue = (diaryDiff + previousDueNum) - (balanceNum + totals.returned + totals.postponed + totals.pickup + totals.shippingDiff + totals.transferDelivery + totals.refuseNoShipping + totals.returnPenalty);
                 const dueWithPostponed = finalDue + totals.postponed;
 
                 return (
