@@ -36,7 +36,7 @@ export default function Login() {
           </div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              FIRST
+              MODEX
             </h1>
             <p className="text-sm text-muted-foreground mt-1">Shipping System</p>
           </div>

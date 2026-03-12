@@ -81,7 +81,7 @@ export function AppSidebar() {
             F
           </div>
           <span className="text-lg font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            FIRST
+            MODEX
           </span>
         </div>
       </SidebarHeader>
