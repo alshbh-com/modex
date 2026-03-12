@@ -85,11 +85,14 @@ export default function DataExport() {
           break;
         }
         case 'couriers': {
-          const { data } = await supabase.from('profiles').select('*, user_roles(role)');
-          const couriers = (data || []).filter((p: any) => p.user_roles?.some((r: any) => r.role === 'courier'));
-          downloadCSV(couriers.map(c => ({
+          const { data: roles } = await supabase.from('user_roles').select('user_id').eq('role', 'courier');
+          const courierIds = (roles || []).map(r => r.user_id);
+          const { data } = courierIds.length > 0
+            ? await supabase.from('profiles').select('*').in('id', courierIds)
+            : { data: [] };
+          downloadCSV((data || []).map((c: any) => ({
             'الاسم': c.full_name, 'الهاتف': c.phone, 'العنوان': c.address,
-            'مناطق التغطية': c.coverage_areas, 'الراتب': c.salary, 'نشط': c.is_active ? 'نعم' : 'لا',
+            'مناطق التغطية': c.coverage_areas, 'الراتب': c.salary,
           })), 'couriers');
           break;
         }
