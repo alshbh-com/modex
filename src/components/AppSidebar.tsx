@@ -3,7 +3,7 @@ import {
   Truck, Wallet, CreditCard, ScrollText, Settings, LogOut, Archive, Building,
   PackageSearch, Search, Printer, DollarSign, MapPin, Users, BarChart3,
   TrendingUp, Calendar, UserCheck, MessageSquare, Locate, FileSpreadsheet,
-  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2
+  CircleDot, Calculator, Contact, ClipboardList, Trash2, FileBarChart, Navigation2, BookOpen
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -50,6 +50,7 @@ const reportsItems = [
 ];
 
 const toolsItems = [
+  { title: 'شرح السيستم', url: '/system-guide', icon: BookOpen },
   { title: 'تتبع الشحنات', url: '/tracking', icon: Locate },
   { title: 'الطباعة', url: '/print', icon: Printer },
   { title: 'ملاحظات الأوردرات', url: '/order-notes', icon: MessageSquare },
