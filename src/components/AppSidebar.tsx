@@ -50,6 +50,7 @@ const reportsItems = [
 ];
 
 const toolsItems = [
+  { title: 'شرح السيستم', url: '/system-guide', icon: BookOpen },
   { title: 'تتبع الشحنات', url: '/tracking', icon: Locate },
   { title: 'الطباعة', url: '/print', icon: Printer },
   { title: 'ملاحظات الأوردرات', url: '/order-notes', icon: MessageSquare },
