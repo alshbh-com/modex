@@ -313,7 +313,7 @@ export default function ExcelImport() {
                         <TableCell className="text-sm">{o.quantity}</TableCell>
                         <TableCell className="text-sm font-bold">{o.price}</TableCell>
                         <TableCell className="text-sm">{o.delivery_price}</TableCell>
-                        <TableCell className="text-sm">{o.address || '-'}</TableCell>
+                        <TableCell className="text-sm max-w-[200px] truncate" title={o.address}>{o.address || '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
