@@ -36,6 +36,7 @@ import ProfitReport from "@/pages/ProfitReport";
 import StatusManagement from "@/pages/StatusManagement";
 import OrderNotes from "@/pages/OrderNotes";
 import DataExport from "@/pages/DataExport";
+import ExcelImport from "@/pages/ExcelImport";
 import OfficePortal from "@/pages/OfficePortal";
 import OfficeSettlement from "@/pages/OfficeSettlement";
 import DiaryOffices from "@/pages/DiaryOffices";
