@@ -120,8 +120,14 @@ export default function ExcelImport() {
           };
         });
 
-        setParsedOrders(orders);
-        toast.success(`تم قراءة ${orders.length} أوردر من الملف`);
+        // Filter out orders missing required fields
+        const valid = orders.filter(o => o.customer_name && o.customer_phone && o.price > 0);
+        const skipped = orders.length - valid.length;
+        setParsedOrders(valid);
+        if (skipped > 0) {
+          toast.warning(`تم تجاهل ${skipped} أوردر بدون اسم أو رقم أو سعر`);
+        }
+        toast.success(`تم قراءة ${valid.length} أوردر صالح من الملف`);
       } catch {
         toast.error('خطأ في قراءة الملف');
       }
