@@ -41,14 +41,14 @@ const SYSTEM_FIELDS: { key: keyof ParsedOrder; label: string; required: boolean 
 
 // Auto-detect hints for common column names
 const AUTO_MAP_HINTS: Record<string, keyof ParsedOrder> = {
-  'اسم العميل': 'customer_name', 'customer_name': 'customer_name', 'الاسم': 'customer_name', 'اسم': 'customer_name', 'name': 'customer_name', 'العميل': 'customer_name',
-  'رقم الهاتف': 'customer_phone', 'الهاتف': 'customer_phone', 'الموبايل': 'customer_phone', 'customer_phone': 'customer_phone', 'phone': 'customer_phone', 'موبايل': 'customer_phone', 'رقم': 'customer_phone', 'تليفون': 'customer_phone', 'mobile': 'customer_phone',
-  'كود العميل': 'customer_code', 'الكود': 'customer_code', 'customer_code': 'customer_code', 'code': 'customer_code', 'كود': 'customer_code',
+  'اسم العميل': 'customer_name', 'customer_name': 'customer_name', 'الاسم': 'customer_name', 'اسم': 'customer_name', 'name': 'customer_name', 'العميل': 'customer_name', 'اسم المستلم': 'customer_name', 'المستلم': 'customer_name',
+  'رقم الهاتف': 'customer_phone', 'الهاتف': 'customer_phone', 'الموبايل': 'customer_phone', 'customer_phone': 'customer_phone', 'phone': 'customer_phone', 'موبايل': 'customer_phone', 'رقم': 'customer_phone', 'تليفون': 'customer_phone', 'mobile': 'customer_phone', 'موبايل المستلم': 'customer_phone',
+  'كود العميل': 'customer_code', 'الكود': 'customer_code', 'customer_code': 'customer_code', 'code': 'customer_code', 'كود': 'customer_code', 'البوليصة': 'customer_code', 'بوليصة': 'customer_code',
   'المنتج': 'product_name', 'اسم المنتج': 'product_name', 'product_name': 'product_name', 'product': 'product_name', 'منتج': 'product_name',
-  'الكمية': 'quantity', 'quantity': 'quantity', 'كمية': 'quantity', 'qty': 'quantity',
-  'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'الاجمالي': 'price', 'total': 'price', 'amount': 'price',
+  'الكمية': 'quantity', 'quantity': 'quantity', 'كمية': 'quantity', 'qty': 'quantity', 'كميه': 'quantity',
+  'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'الاجمالي': 'price', 'total': 'price', 'amount': 'price', 'المطلوب سداده': 'price', 'المطلوب': 'price',
   'سعر التوصيل': 'delivery_price', 'الشحن': 'delivery_price', 'delivery_price': 'delivery_price', 'shipping': 'delivery_price', 'توصيل': 'delivery_price', 'شحن': 'delivery_price',
-  'العنوان': 'address', 'address': 'address', 'المحافظة': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'city': 'address', 'area': 'address',
+  'العنوان': 'address', 'address': 'address', 'المحافظة': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'city': 'address', 'area': 'address', 'مدينة': 'address', 'المدينة': 'address',
   'اللون': 'color', 'color': 'color', 'لون': 'color',
   'المقاس': 'size', 'size': 'size', 'مقاس': 'size',
   'ملاحظات': 'notes', 'notes': 'notes', 'ملاحظة': 'notes', 'note': 'notes',
