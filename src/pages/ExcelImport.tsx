@@ -19,6 +19,7 @@ interface ParsedOrder {
   quantity: number;
   price: number;
   delivery_price: number;
+  governorate?: string;
   address?: string;
   color?: string;
   size?: string;
