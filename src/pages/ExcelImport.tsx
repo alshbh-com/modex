@@ -34,6 +34,7 @@ const SYSTEM_FIELDS: { key: keyof ParsedOrder; label: string; required: boolean 
   { key: 'quantity', label: 'الكمية', required: false },
   { key: 'price', label: 'السعر', required: true },
   { key: 'delivery_price', label: 'سعر التوصيل', required: false },
+  { key: 'governorate', label: 'المحافظة', required: false },
   { key: 'address', label: 'العنوان', required: false },
   { key: 'color', label: 'اللون', required: false },
   { key: 'size', label: 'المقاس', required: false },
