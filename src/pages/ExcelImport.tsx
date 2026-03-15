@@ -151,6 +151,11 @@ export default function ExcelImport() {
         else if (key === 'price' || key === 'delivery_price') order[key] = parseFloat(String(val)) || 0;
         else (order as any)[key] = String(val).trim();
       }
+      // Concatenate governorate + address
+      const gov = order.governorate || '';
+      const addr = order.address || '';
+      const fullAddress = gov && addr ? `${gov} - ${addr}` : gov || addr;
+
       return {
         customer_name: order.customer_name || '',
         customer_phone: order.customer_phone || '',
@@ -159,7 +164,8 @@ export default function ExcelImport() {
         quantity: order.quantity || 1,
         price: order.price || 0,
         delivery_price: order.delivery_price || (globalShipping ? parseFloat(globalShipping) : 0),
-        address: order.address || '',
+        governorate: gov,
+        address: fullAddress,
         color: order.color || '',
         size: order.size || '',
         notes: order.notes || '',
