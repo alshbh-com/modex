@@ -232,7 +232,7 @@ export default function ExcelImport() {
     setParsedOrders([]);
     setFileName('');
     setResult(null);
-    setProgress(0);
+    setGlobalShipping('');
     if (fileRef.current) fileRef.current.value = '';
   };
 
