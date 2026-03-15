@@ -202,7 +202,7 @@ export default function Orders() {
                       </TableCell>
                       <TableCell className="font-mono text-xs">{order.customer_code || '-'}</TableCell>
                       <TableCell className="text-sm">{order.customer_name}</TableCell>
-                      <TableCell className="text-sm truncate max-w-[120px]">{order.address || '-'}</TableCell>
+                      <TableCell className="text-sm max-w-[250px]" title={order.address || ''}>{order.address || '-'}</TableCell>
                       <TableCell dir="ltr" className="hidden sm:table-cell text-sm">{order.customer_phone}</TableCell>
                       <TableCell className="hidden md:table-cell text-sm">{order.product_name}</TableCell>
                       <TableCell className="text-sm">{Number(order.price)} ج.م</TableCell>

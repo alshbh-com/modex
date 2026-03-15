@@ -41,14 +41,14 @@ const SYSTEM_FIELDS: { key: keyof ParsedOrder; label: string; required: boolean 
 
 // Auto-detect hints for common column names
 const AUTO_MAP_HINTS: Record<string, keyof ParsedOrder> = {
-  'اسم العميل': 'customer_name', 'customer_name': 'customer_name', 'الاسم': 'customer_name', 'اسم': 'customer_name', 'name': 'customer_name', 'العميل': 'customer_name',
-  'رقم الهاتف': 'customer_phone', 'الهاتف': 'customer_phone', 'الموبايل': 'customer_phone', 'customer_phone': 'customer_phone', 'phone': 'customer_phone', 'موبايل': 'customer_phone', 'رقم': 'customer_phone', 'تليفون': 'customer_phone', 'mobile': 'customer_phone',
-  'كود العميل': 'customer_code', 'الكود': 'customer_code', 'customer_code': 'customer_code', 'code': 'customer_code', 'كود': 'customer_code',
+  'اسم العميل': 'customer_name', 'customer_name': 'customer_name', 'الاسم': 'customer_name', 'اسم': 'customer_name', 'name': 'customer_name', 'العميل': 'customer_name', 'اسم المستلم': 'customer_name', 'المستلم': 'customer_name',
+  'رقم الهاتف': 'customer_phone', 'الهاتف': 'customer_phone', 'الموبايل': 'customer_phone', 'customer_phone': 'customer_phone', 'phone': 'customer_phone', 'موبايل': 'customer_phone', 'رقم': 'customer_phone', 'تليفون': 'customer_phone', 'mobile': 'customer_phone', 'موبايل المستلم': 'customer_phone',
+  'كود العميل': 'customer_code', 'الكود': 'customer_code', 'customer_code': 'customer_code', 'code': 'customer_code', 'كود': 'customer_code', 'البوليصة': 'customer_code', 'بوليصة': 'customer_code',
   'المنتج': 'product_name', 'اسم المنتج': 'product_name', 'product_name': 'product_name', 'product': 'product_name', 'منتج': 'product_name',
-  'الكمية': 'quantity', 'quantity': 'quantity', 'كمية': 'quantity', 'qty': 'quantity',
-  'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'الاجمالي': 'price', 'total': 'price', 'amount': 'price',
+  'الكمية': 'quantity', 'quantity': 'quantity', 'كمية': 'quantity', 'qty': 'quantity', 'كميه': 'quantity',
+  'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'الاجمالي': 'price', 'total': 'price', 'amount': 'price', 'المطلوب سداده': 'price', 'المطلوب': 'price',
   'سعر التوصيل': 'delivery_price', 'الشحن': 'delivery_price', 'delivery_price': 'delivery_price', 'shipping': 'delivery_price', 'توصيل': 'delivery_price', 'شحن': 'delivery_price',
-  'العنوان': 'address', 'address': 'address', 'المحافظة': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'city': 'address', 'area': 'address',
+  'العنوان': 'address', 'address': 'address', 'المحافظة': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'city': 'address', 'area': 'address', 'مدينة': 'address', 'المدينة': 'address',
   'اللون': 'color', 'color': 'color', 'لون': 'color',
   'المقاس': 'size', 'size': 'size', 'مقاس': 'size',
   'ملاحظات': 'notes', 'notes': 'notes', 'ملاحظة': 'notes', 'note': 'notes',
@@ -65,6 +65,7 @@ export default function ExcelImport() {
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ success: number; failed: number } | null>(null);
   const [step, setStep] = useState<'upload' | 'map' | 'preview'>('upload');
+  const [globalShipping, setGlobalShipping] = useState<string>('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: offices = [] } = useQuery({
@@ -154,7 +155,7 @@ export default function ExcelImport() {
         product_name: order.product_name || 'بدون منتج',
         quantity: order.quantity || 1,
         price: order.price || 0,
-        delivery_price: order.delivery_price || 0,
+        delivery_price: order.delivery_price || (globalShipping ? parseFloat(globalShipping) : 0),
         address: order.address || '',
         color: order.color || '',
         size: order.size || '',
@@ -231,7 +232,7 @@ export default function ExcelImport() {
     setParsedOrders([]);
     setFileName('');
     setResult(null);
-    setProgress(0);
+    setGlobalShipping('');
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -262,7 +263,7 @@ export default function ExcelImport() {
           <CardTitle className="text-base">إعدادات الاستيراد</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1">
               <label className="text-sm text-muted-foreground">اختر المكتب</label>
               <Select value={selectedOffice} onValueChange={setSelectedOffice}>
@@ -275,6 +276,17 @@ export default function ExcelImport() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-sm text-muted-foreground">سعر الشحن (لكل الأوردرات)</label>
+              <input
+                type="number"
+                value={globalShipping}
+                onChange={(e) => setGlobalShipping(e.target.value)}
+                placeholder="مثلاً 70"
+                className="flex h-10 w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
             </div>
 
             <div className="space-y-1">
