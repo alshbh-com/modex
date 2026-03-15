@@ -155,7 +155,7 @@ export default function ExcelImport() {
         product_name: order.product_name || 'بدون منتج',
         quantity: order.quantity || 1,
         price: order.price || 0,
-        delivery_price: order.delivery_price || 0,
+        delivery_price: order.delivery_price || (globalShipping ? parseFloat(globalShipping) : 0),
         address: order.address || '',
         color: order.color || '',
         size: order.size || '',
