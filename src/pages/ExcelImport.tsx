@@ -19,6 +19,7 @@ interface ParsedOrder {
   quantity: number;
   price: number;
   delivery_price: number;
+  governorate?: string;
   address?: string;
   color?: string;
   size?: string;
@@ -33,6 +34,7 @@ const SYSTEM_FIELDS: { key: keyof ParsedOrder; label: string; required: boolean 
   { key: 'quantity', label: 'الكمية', required: false },
   { key: 'price', label: 'السعر', required: true },
   { key: 'delivery_price', label: 'سعر التوصيل', required: false },
+  { key: 'governorate', label: 'المحافظة', required: false },
   { key: 'address', label: 'العنوان', required: false },
   { key: 'color', label: 'اللون', required: false },
   { key: 'size', label: 'المقاس', required: false },
@@ -48,7 +50,8 @@ const AUTO_MAP_HINTS: Record<string, keyof ParsedOrder> = {
   'الكمية': 'quantity', 'quantity': 'quantity', 'كمية': 'quantity', 'qty': 'quantity', 'كميه': 'quantity',
   'السعر': 'price', 'price': 'price', 'سعر': 'price', 'المبلغ': 'price', 'الاجمالي': 'price', 'total': 'price', 'amount': 'price', 'المطلوب سداده': 'price', 'المطلوب': 'price',
   'سعر التوصيل': 'delivery_price', 'الشحن': 'delivery_price', 'delivery_price': 'delivery_price', 'shipping': 'delivery_price', 'توصيل': 'delivery_price', 'شحن': 'delivery_price',
-  'العنوان': 'address', 'address': 'address', 'المحافظة': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'city': 'address', 'area': 'address', 'مدينة': 'address', 'المدينة': 'address',
+  'المحافظة': 'governorate', 'محافظة': 'governorate', 'مدينة': 'governorate', 'المدينة': 'governorate', 'city': 'governorate', 'governorate': 'governorate',
+  'العنوان': 'address', 'address': 'address', 'عنوان': 'address', 'المنطقة': 'address', 'area': 'address',
   'اللون': 'color', 'color': 'color', 'لون': 'color',
   'المقاس': 'size', 'size': 'size', 'مقاس': 'size',
   'ملاحظات': 'notes', 'notes': 'notes', 'ملاحظة': 'notes', 'note': 'notes',
@@ -148,6 +151,11 @@ export default function ExcelImport() {
         else if (key === 'price' || key === 'delivery_price') order[key] = parseFloat(String(val)) || 0;
         else (order as any)[key] = String(val).trim();
       }
+      // Concatenate governorate + address
+      const gov = order.governorate || '';
+      const addr = order.address || '';
+      const fullAddress = gov && addr ? `${gov} - ${addr}` : gov || addr;
+
       return {
         customer_name: order.customer_name || '',
         customer_phone: order.customer_phone || '',
@@ -156,7 +164,8 @@ export default function ExcelImport() {
         quantity: order.quantity || 1,
         price: order.price || 0,
         delivery_price: order.delivery_price || (globalShipping ? parseFloat(globalShipping) : 0),
-        address: order.address || '',
+        governorate: gov,
+        address: fullAddress,
         color: order.color || '',
         size: order.size || '',
         notes: order.notes || '',
