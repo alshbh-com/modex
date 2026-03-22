@@ -14,10 +14,20 @@ import { moveToTrash } from '@/lib/trashUtils';
 export default function ClosedOrders() {
   const { isOwner } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
+  const [couriers, setCouriers] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => { loadOrders(); loadCouriers(); }, []);
+
+  const loadCouriers = async () => {
+    const { data } = await supabase.from('profiles').select('id, full_name');
+    if (data) {
+      const map: Record<string, string> = {};
+      data.forEach(p => { map[p.id] = p.full_name; });
+      setCouriers(map);
+    }
+  };
 
   const loadOrders = async () => {
     const { data } = await supabase
@@ -98,13 +108,14 @@ export default function ClosedOrders() {
                   <TableHead className="text-right">العنوان</TableHead>
                   <TableHead className="text-right hidden sm:table-cell">المنتج</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
-                  <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
-                  <TableHead className="text-right">الحالة</TableHead>
+                   <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
+                   <TableHead className="text-right hidden sm:table-cell">المندوب</TableHead>
+                   <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={isOwner ? 9 : 8} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isOwner ? 10 : 9} className="text-center text-muted-foreground py-8">لا توجد أوردرات مقفلة</TableCell></TableRow>
                 ) : filtered.map(order => (
                   <TableRow key={order.id} className="border-border">
                     {isOwner && <TableCell><Checkbox checked={selected.has(order.id)} onCheckedChange={() => toggleSelect(order.id)} /></TableCell>}
@@ -115,6 +126,7 @@ export default function ClosedOrders() {
                     <TableCell className="hidden sm:table-cell text-sm">{order.product_name}</TableCell>
                     <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                     <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-sm">{order.courier_id ? (couriers[order.courier_id] || '-') : '-'}</TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || '-'}
