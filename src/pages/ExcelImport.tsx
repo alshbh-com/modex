@@ -148,7 +148,10 @@ export default function ExcelImport() {
         const val = row[excelCol];
         const key = systemField as keyof ParsedOrder;
         if (key === 'quantity') order[key] = parseInt(String(val)) || 1;
-        else if (key === 'price' || key === 'delivery_price') order[key] = parseFloat(String(val)) || 0;
+        else if (key === 'price' || key === 'delivery_price') {
+          const cleaned = String(val).replace(/,/g, '');
+          order[key] = parseFloat(cleaned) || 0;
+        }
         else (order as any)[key] = String(val).trim();
       }
       // Concatenate governorate + address
