@@ -14,10 +14,20 @@ import { moveToTrash } from '@/lib/trashUtils';
 export default function ClosedOrders() {
   const { isOwner } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
+  const [couriers, setCouriers] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => { loadOrders(); loadCouriers(); }, []);
+
+  const loadCouriers = async () => {
+    const { data } = await supabase.from('profiles').select('id, full_name');
+    if (data) {
+      const map: Record<string, string> = {};
+      data.forEach(p => { map[p.id] = p.full_name; });
+      setCouriers(map);
+    }
+  };
 
   const loadOrders = async () => {
     const { data } = await supabase
