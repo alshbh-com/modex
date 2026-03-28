@@ -109,7 +109,7 @@ export default function ClosedOrders() {
                   <TableHead className="text-right hidden sm:table-cell">المنتج</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
                    <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
-                   <TableHead className="text-right hidden sm:table-cell">المندوب</TableHead>
+                   <TableHead className="text-right">المندوب</TableHead>
                    <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
