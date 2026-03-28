@@ -109,7 +109,7 @@ export default function ClosedOrders() {
                   <TableHead className="text-right hidden sm:table-cell">المنتج</TableHead>
                   <TableHead className="text-right">الإجمالي</TableHead>
                    <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
-                   <TableHead className="text-right hidden sm:table-cell">المندوب</TableHead>
+                   <TableHead className="text-right">المندوب</TableHead>
                    <TableHead className="text-right">الحالة</TableHead>
                 </TableRow>
               </TableHeader>
@@ -126,7 +126,7 @@ export default function ClosedOrders() {
                     <TableCell className="hidden sm:table-cell text-sm">{order.product_name}</TableCell>
                     <TableCell className="font-bold text-sm">{Number(order.price) + Number(order.delivery_price)} ج.م</TableCell>
                     <TableCell className="hidden md:table-cell text-sm">{order.offices?.name || '-'}</TableCell>
-                    <TableCell className="hidden sm:table-cell text-sm">{order.courier_id ? (couriers[order.courier_id] || '-') : '-'}</TableCell>
+                    <TableCell className="text-sm">{order.courier_id ? (couriers[order.courier_id] || '-') : '-'}</TableCell>
                     <TableCell>
                       <Badge style={{ backgroundColor: order.order_statuses?.color || undefined }} className="text-xs">
                         {order.order_statuses?.name || '-'}
