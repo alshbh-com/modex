@@ -305,10 +305,17 @@ export default function CourierOrders() {
           </Card>
         )}
 
+        <div className="relative max-w-xs">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="بحث بالاسم / الرقم / الباركود..." value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pr-9 bg-secondary border-border" />
+        </div>
+
         <Card className="bg-card border-border">
           <CardContent className="p-3 space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">إجمالي الأوردرات: {orders.length}</span>
+              <span className="text-sm text-muted-foreground">إجمالي الأوردرات: {filteredOrders.length}</span>
               <span className="font-bold text-lg">{totalPrice} ج.م</span>
             </div>
             {(() => {
