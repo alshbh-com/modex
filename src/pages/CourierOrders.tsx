@@ -322,7 +322,7 @@ export default function CourierOrders() {
               const deliveredTotal = filteredOrders
                 .filter(o => o.order_statuses?.name === 'تم التسليم')
                 .reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
-              const partialTotal = orders
+              const partialTotal = filteredOrders
                 .filter(o => o.order_statuses?.name === 'تسليم جزئي')
                 .reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
               const rejectShipTotal = orders
