@@ -138,7 +138,22 @@ export default function CourierOrders() {
     }
   };
 
-  const totalPrice = orders.reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredOrders = orders.filter(o => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      o.tracking_id?.toLowerCase().includes(term) ||
+      o.customer_name?.toLowerCase().includes(term) ||
+      o.customer_phone?.includes(searchTerm) ||
+      o.barcode?.includes(searchTerm) ||
+      o.customer_code?.toLowerCase().includes(term) ||
+      o.address?.toLowerCase().includes(term)
+    );
+  });
+
+  const totalPrice = filteredOrders.reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
 
   const rejectWithShipStatus = statuses.find(s => s.name === 'رفض ودفع شحن');
   const postponedStatus = statuses.find(s => s.name === 'مؤجل');
