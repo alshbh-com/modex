@@ -356,9 +356,9 @@ export default function CourierOrders() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.length === 0 ? (
+                  {filteredOrders.length === 0 ? (
                     <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                  ) : orders.map((order, idx) => (
+                  ) : filteredOrders.map((order, idx) => (
                     <TableRow key={order.id} className="border-border">
                       <TableCell>
                         <div className="flex flex-col gap-1">
