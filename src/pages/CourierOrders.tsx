@@ -319,7 +319,7 @@ export default function CourierOrders() {
               <span className="font-bold text-lg">{totalPrice} ج.م</span>
             </div>
             {(() => {
-              const deliveredTotal = orders
+              const deliveredTotal = filteredOrders
                 .filter(o => o.order_statuses?.name === 'تم التسليم')
                 .reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
               const partialTotal = orders
