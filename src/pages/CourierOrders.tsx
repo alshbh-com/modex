@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Eye, Phone, MessageSquare, Send, MapPin, AlertTriangle } from 'lucide-react';
+import { LogOut, Eye, Phone, MessageSquare, Send, MapPin, AlertTriangle, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
 import { useCourierLocation } from '@/hooks/useCourierLocation';
@@ -138,7 +138,22 @@ export default function CourierOrders() {
     }
   };
 
-  const totalPrice = orders.reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredOrders = orders.filter(o => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      o.tracking_id?.toLowerCase().includes(term) ||
+      o.customer_name?.toLowerCase().includes(term) ||
+      o.customer_phone?.includes(searchTerm) ||
+      o.barcode?.includes(searchTerm) ||
+      o.customer_code?.toLowerCase().includes(term) ||
+      o.address?.toLowerCase().includes(term)
+    );
+  });
+
+  const totalPrice = filteredOrders.reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
 
   const rejectWithShipStatus = statuses.find(s => s.name === 'رفض ودفع شحن');
   const postponedStatus = statuses.find(s => s.name === 'مؤجل');
@@ -290,20 +305,27 @@ export default function CourierOrders() {
           </Card>
         )}
 
+        <div className="relative max-w-xs">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="بحث بالاسم / الرقم / الباركود..." value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pr-9 bg-secondary border-border" />
+        </div>
+
         <Card className="bg-card border-border">
           <CardContent className="p-3 space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">إجمالي الأوردرات: {orders.length}</span>
+              <span className="text-sm text-muted-foreground">إجمالي الأوردرات: {filteredOrders.length}</span>
               <span className="font-bold text-lg">{totalPrice} ج.م</span>
             </div>
             {(() => {
-              const deliveredTotal = orders
+              const deliveredTotal = filteredOrders
                 .filter(o => o.order_statuses?.name === 'تم التسليم')
                 .reduce((sum, o) => sum + Number(o.price) + Number(o.delivery_price), 0);
-              const partialTotal = orders
+              const partialTotal = filteredOrders
                 .filter(o => o.order_statuses?.name === 'تسليم جزئي')
                 .reduce((sum, o) => sum + Number(o.partial_amount || 0), 0);
-              const rejectShipTotal = orders
+              const rejectShipTotal = filteredOrders
                 .filter(o => ['رفض ودفع شحن', 'استلم ودفع نص الشحن'].includes(o.order_statuses?.name))
                 .reduce((sum, o) => sum + Number(o.shipping_paid || 0), 0);
               const totalCollection = deliveredTotal + partialTotal + rejectShipTotal;
@@ -334,9 +356,9 @@ export default function CourierOrders() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.length === 0 ? (
+                  {filteredOrders.length === 0 ? (
                     <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">لا توجد أوردرات</TableCell></TableRow>
-                  ) : orders.map((order, idx) => (
+                  ) : filteredOrders.map((order, idx) => (
                     <TableRow key={order.id} className="border-border">
                       <TableCell>
                         <div className="flex flex-col gap-1">
