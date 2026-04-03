@@ -18,6 +18,7 @@ export default function ClosedOrders() {
   const [couriers, setCouriers] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [viewOrder, setViewOrder] = useState<any>(null);
 
   useEffect(() => { loadOrders(); loadCouriers(); }, []);
 
