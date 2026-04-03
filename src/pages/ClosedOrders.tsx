@@ -113,6 +113,7 @@ export default function ClosedOrders() {
                    <TableHead className="text-right hidden md:table-cell">المكتب</TableHead>
                    <TableHead className="text-right">المندوب</TableHead>
                    <TableHead className="text-right">الحالة</TableHead>
+                   <TableHead className="w-10"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
