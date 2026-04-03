@@ -135,6 +135,11 @@ export default function ClosedOrders() {
                         {order.order_statuses?.name || '-'}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setViewOrder(order)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -142,6 +147,42 @@ export default function ClosedOrders() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!viewOrder} onOpenChange={() => setViewOrder(null)}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-right">تفاصيل الأوردر</DialogTitle>
+          </DialogHeader>
+          {viewOrder && (
+            <div className="space-y-3 text-sm" dir="rtl">
+              {[
+                ['الباركود', viewOrder.barcode],
+                ['كود التتبع', viewOrder.tracking_id],
+                ['كود العميل', viewOrder.customer_code],
+                ['اسم العميل', viewOrder.customer_name],
+                ['رقم الهاتف', viewOrder.customer_phone],
+                ['العنوان', viewOrder.address],
+                ['المنتج', viewOrder.product_name],
+                ['الكمية', viewOrder.quantity],
+                ['السعر', `${viewOrder.price} ج.م`],
+                ['سعر الشحن', `${viewOrder.delivery_price} ج.م`],
+                ['الإجمالي', `${Number(viewOrder.price) + Number(viewOrder.delivery_price)} ج.م`],
+                ['المكتب', viewOrder.offices?.name],
+                ['المندوب', viewOrder.courier_id ? (couriers[viewOrder.courier_id] || '-') : '-'],
+                ['الحالة', viewOrder.order_statuses?.name],
+                ['الملاحظات', viewOrder.notes],
+                ['تاريخ الإنشاء', new Date(viewOrder.created_at).toLocaleDateString('ar-EG')],
+                ['آخر تحديث', new Date(viewOrder.updated_at).toLocaleDateString('ar-EG')],
+              ].map(([label, value]) => (
+                <div key={label as string} className="flex justify-between border-b border-border pb-2">
+                  <span className="font-medium text-muted-foreground">{label}</span>
+                  <span className="font-bold">{value || '-'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
