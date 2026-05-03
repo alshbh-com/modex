@@ -106,11 +106,11 @@ export default function OfficeAccounts() {
     const { data: allPayments } = await supabase.from('office_payments').select('*');
 
     const result = await Promise.all(officeList.map(async (office) => {
-      let query = supabase
+      let query = (supabase as any)
         .from('orders')
         .select('price, delivery_price, status_id, partial_amount')
         .eq('office_id', office.id)
-        .eq('is_closed', false);
+        .eq('office_account_closed', false);
 
       if (dateFilter) query = query.gte('created_at', dateFilter);
       const { data: orders } = await query;
