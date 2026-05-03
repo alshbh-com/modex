@@ -48,11 +48,11 @@ export default function OfficeAccounts() {
   }, [selectedOffice]);
 
   const loadOfficeOrders = async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('orders')
-      .select('id, barcode, status_id, partial_amount, price, is_settled, customer_code, customer_name, office_account_closed' as any)
+      .select('id, barcode, status_id, partial_amount, price, is_settled, customer_code, customer_name, office_account_closed')
       .eq('office_id', selectedOffice)
-      .eq('office_account_closed' as any, false)
+      .eq('office_account_closed', false)
       .order('created_at', { ascending: false });
     setOfficeOrders(data || []);
   };
