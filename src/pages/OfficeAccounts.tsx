@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLogger';
 
@@ -18,6 +18,7 @@ export default function OfficeAccounts() {
   const { isOwner } = useAuth();
   const [offices, setOffices] = useState<any[]>([]);
   const [selectedOffice, setSelectedOffice] = useState('all');
+  const [officeSearch, setOfficeSearch] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [period, setPeriod] = useState('all');
@@ -47,11 +48,11 @@ export default function OfficeAccounts() {
   }, [selectedOffice]);
 
   const loadOfficeOrders = async () => {
-    const { data } = await supabase
+    const { data } = await (supabase as any)
       .from('orders')
-      .select('id, barcode, status_id, partial_amount, price, is_settled, customer_code, customer_name')
+      .select('id, barcode, status_id, partial_amount, price, is_settled, customer_code, customer_name, office_account_closed')
       .eq('office_id', selectedOffice)
-      .eq('is_closed', false)
+      .eq('office_account_closed', false)
       .order('created_at', { ascending: false });
     setOfficeOrders(data || []);
   };
@@ -60,6 +61,19 @@ export default function OfficeAccounts() {
     await supabase.from('orders').update({ is_settled: settled } as any).eq('id', orderId);
     setOfficeOrders(prev => prev.map(o => o.id === orderId ? { ...o, is_settled: settled } : o));
     toast.success(settled ? 'تم تحديد كخالص' : 'تم إلغاء التحديد');
+  };
+
+  const closeFromOfficeAccounts = async (orderId: string) => {
+    if (!confirm('تقفيل الأوردر من قسم حسابات المكاتب؟ بعد كده مش هيظهر هنا.')) return;
+    const { error } = await supabase.from('orders').update({
+      office_account_closed: true,
+      office_account_closed_at: new Date().toISOString(),
+    } as any).eq('id', orderId);
+    if (error) { toast.error(error.message); return; }
+    logActivity('تقفيل أوردر من حسابات المكاتب', { order_id: orderId });
+    setOfficeOrders(prev => prev.filter(o => o.id !== orderId));
+    toast.success('تم التقفيل');
+    loadAccounts();
   };
 
   const getDateFilter = () => {
@@ -92,11 +106,11 @@ export default function OfficeAccounts() {
     const { data: allPayments } = await supabase.from('office_payments').select('*');
 
     const result = await Promise.all(officeList.map(async (office) => {
-      let query = supabase
+      let query = (supabase as any)
         .from('orders')
         .select('price, delivery_price, status_id, partial_amount')
         .eq('office_id', office.id)
-        .eq('is_closed', false);
+        .eq('office_account_closed', false);
 
       if (dateFilter) query = query.gte('created_at', dateFilter);
       const { data: orders } = await query;
@@ -240,12 +254,26 @@ export default function OfficeAccounts() {
         </Dialog>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Select value={selectedOffice} onValueChange={setSelectedOffice}>
           <SelectTrigger className="w-44 bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
           <SelectContent>
+            <div className="p-2 sticky top-0 bg-popover z-10">
+              <div className="relative">
+                <Search className="absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="ابحث عن مكتب..."
+                  value={officeSearch}
+                  onChange={e => setOfficeSearch(e.target.value)}
+                  onKeyDown={e => e.stopPropagation()}
+                  className="h-8 pr-7 text-sm bg-secondary border-border"
+                />
+              </div>
+            </div>
             <SelectItem value="all">كل المكاتب</SelectItem>
-            {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+            {offices
+              .filter(o => !officeSearch || o.name?.toLowerCase().includes(officeSearch.toLowerCase()))
+              .map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Tabs value={period} onValueChange={setPeriod} className="w-auto">
@@ -337,6 +365,7 @@ export default function OfficeAccounts() {
                     <TableHead className="text-right">التحصيل الجزئي</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">خالص</TableHead>
+                    <TableHead className="text-right">تقفيل</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -355,6 +384,11 @@ export default function OfficeAccounts() {
                         <TableCell>
                           <Button size="sm" variant={o.is_settled ? 'default' : 'outline'} className={`text-xs h-6 px-2 ${o.is_settled ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`} onClick={() => toggleSettled(o.id, !o.is_settled)}>
                             {o.is_settled ? '✓ خالص' : 'خالص'}
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" title="تقفيل من حسابات المكاتب" onClick={() => closeFromOfficeAccounts(o.id)}>
+                            <Lock className="h-3.5 w-3.5" />
                           </Button>
                         </TableCell>
                       </TableRow>
