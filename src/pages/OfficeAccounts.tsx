@@ -254,12 +254,26 @@ export default function OfficeAccounts() {
         </Dialog>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 items-center">
         <Select value={selectedOffice} onValueChange={setSelectedOffice}>
           <SelectTrigger className="w-44 bg-secondary border-border"><SelectValue placeholder="اختر مكتب" /></SelectTrigger>
           <SelectContent>
+            <div className="p-2 sticky top-0 bg-popover z-10">
+              <div className="relative">
+                <Search className="absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="ابحث عن مكتب..."
+                  value={officeSearch}
+                  onChange={e => setOfficeSearch(e.target.value)}
+                  onKeyDown={e => e.stopPropagation()}
+                  className="h-8 pr-7 text-sm bg-secondary border-border"
+                />
+              </div>
+            </div>
             <SelectItem value="all">كل المكاتب</SelectItem>
-            {offices.map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
+            {offices
+              .filter(o => !officeSearch || o.name?.toLowerCase().includes(officeSearch.toLowerCase()))
+              .map(o => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Tabs value={period} onValueChange={setPeriod} className="w-auto">
