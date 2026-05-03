@@ -18,6 +18,7 @@ export default function OfficeAccounts() {
   const { isOwner } = useAuth();
   const [offices, setOffices] = useState<any[]>([]);
   const [selectedOffice, setSelectedOffice] = useState('all');
+  const [officeSearch, setOfficeSearch] = useState('');
   const [statuses, setStatuses] = useState<any[]>([]);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [period, setPeriod] = useState('all');
