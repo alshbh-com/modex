@@ -365,6 +365,7 @@ export default function OfficeAccounts() {
                     <TableHead className="text-right">التحصيل الجزئي</TableHead>
                     <TableHead className="text-right">الحالة</TableHead>
                     <TableHead className="text-right">خالص</TableHead>
+                    <TableHead className="text-right">تقفيل</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
