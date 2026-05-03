@@ -50,9 +50,9 @@ export default function OfficeAccounts() {
   const loadOfficeOrders = async () => {
     const { data } = await supabase
       .from('orders')
-      .select('id, barcode, status_id, partial_amount, price, is_settled, customer_code, customer_name')
+      .select('id, barcode, status_id, partial_amount, price, is_settled, customer_code, customer_name, office_account_closed' as any)
       .eq('office_id', selectedOffice)
-      .eq('is_closed', false)
+      .eq('office_account_closed' as any, false)
       .order('created_at', { ascending: false });
     setOfficeOrders(data || []);
   };
@@ -61,6 +61,19 @@ export default function OfficeAccounts() {
     await supabase.from('orders').update({ is_settled: settled } as any).eq('id', orderId);
     setOfficeOrders(prev => prev.map(o => o.id === orderId ? { ...o, is_settled: settled } : o));
     toast.success(settled ? 'تم تحديد كخالص' : 'تم إلغاء التحديد');
+  };
+
+  const closeFromOfficeAccounts = async (orderId: string) => {
+    if (!confirm('تقفيل الأوردر من قسم حسابات المكاتب؟ بعد كده مش هيظهر هنا.')) return;
+    const { error } = await supabase.from('orders').update({
+      office_account_closed: true,
+      office_account_closed_at: new Date().toISOString(),
+    } as any).eq('id', orderId);
+    if (error) { toast.error(error.message); return; }
+    logActivity('تقفيل أوردر من حسابات المكاتب', { order_id: orderId });
+    setOfficeOrders(prev => prev.filter(o => o.id !== orderId));
+    toast.success('تم التقفيل');
+    loadAccounts();
   };
 
   const getDateFilter = () => {
