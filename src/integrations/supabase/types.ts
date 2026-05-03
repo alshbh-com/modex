@@ -739,6 +739,9 @@ export type Database = {
           is_closed: boolean
           is_settled: boolean
           notes: string | null
+          office_account_closed: boolean
+          office_account_closed_at: string | null
+          office_account_closed_by: string | null
           office_id: string | null
           partial_amount: number | null
           price: number
@@ -767,6 +770,9 @@ export type Database = {
           is_closed?: boolean
           is_settled?: boolean
           notes?: string | null
+          office_account_closed?: boolean
+          office_account_closed_at?: string | null
+          office_account_closed_by?: string | null
           office_id?: string | null
           partial_amount?: number | null
           price?: number
@@ -795,6 +801,9 @@ export type Database = {
           is_closed?: boolean
           is_settled?: boolean
           notes?: string | null
+          office_account_closed?: boolean
+          office_account_closed_at?: string | null
+          office_account_closed_by?: string | null
           office_id?: string | null
           partial_amount?: number | null
           price?: number
